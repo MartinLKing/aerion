@@ -30,6 +30,7 @@
   }
   import RecipientInput from './RecipientInput.svelte'
   import EditorToolbar from './EditorToolbar.svelte'
+  import SpellLanguageSelect from '$lib/spellcheck/SpellLanguageSelect.svelte'
   import ComposerAttachmentList from './ComposerAttachmentList.svelte'
   import {
     addParagraphStyles,
@@ -2051,6 +2052,7 @@
           </Select.Content>
         </Select.Root>
       </div>
+      <SpellLanguageSelect {api} />
       <!-- Signature picker (rich text only: plain text mode has no signature insertion) -->
       {#if !isPlainTextMode && (namedSignatures.length > 0 || selectedIdentityHasSignature)}
         <div class="w-44 flex-shrink-0">

@@ -37,9 +37,26 @@ const WORD_RE = /[\p{Script=Latin}][\p{Script=Latin}\p{M}'’]*/gu
 
 type WordHit = { word: string; from: number; to: number }
 
+// Quoted text isn't the user's writing, and is often in another language, so it
+// isn't checked: blockquotes, "> " lines (plain text replies), the "On ...
+// wrote:" citation line, and everything from a forwarded message header on.
+const FORWARD_HEADER = '---------- Forwarded message ----------'
+const CITATION_RE = /wrote:\s*$/
+const QUOTED_LINE_RE = /^\s*>/
+
 function collectWords(doc: PMNode): WordHit[] {
   const hits: WordHit[] = []
+  let reachedForward = false
   doc.descendants((node, pos) => {
+    if (reachedForward || node.type.name === 'blockquote') return false
+    if (node.isTextblock) {
+      const text = node.textContent
+      if (text.includes(FORWARD_HEADER)) {
+        reachedForward = true
+        return false
+      }
+      if (QUOTED_LINE_RE.test(text) || CITATION_RE.test(text)) return false
+    }
     if (!node.isText || !node.text) return
     const text = node.text
     WORD_RE.lastIndex = 0

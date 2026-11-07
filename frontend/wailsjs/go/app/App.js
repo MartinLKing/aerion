@@ -718,6 +718,10 @@ export function GetSpecialFolder(arg1, arg2) {
   return window['go']['app']['App']['GetSpecialFolder'](arg1, arg2);
 }
 
+export function GetSpellcheckActiveLanguage() {
+  return window['go']['app']['App']['GetSpellcheckActiveLanguage']();
+}
+
 export function GetSpellcheckCustomWords() {
   return window['go']['app']['App']['GetSpellcheckCustomWords']();
 }
@@ -1276,6 +1280,10 @@ export function SetShowTitleBar(arg1) {
 
 export function SetShowViewerCircles(arg1) {
   return window['go']['app']['App']['SetShowViewerCircles'](arg1);
+}
+
+export function SetSpellcheckActiveLanguage(arg1) {
+  return window['go']['app']['App']['SetSpellcheckActiveLanguage'](arg1);
 }
 
 export function SetSpellcheckEnabled(arg1) {

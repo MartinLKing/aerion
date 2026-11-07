@@ -90,6 +90,10 @@ export function GetShowTitleBar() {
   return window['go']['app']['ComposerApp']['GetShowTitleBar']();
 }
 
+export function GetSpellcheckActiveLanguage() {
+  return window['go']['app']['ComposerApp']['GetSpellcheckActiveLanguage']();
+}
+
 export function GetSystemTheme() {
   return window['go']['app']['ComposerApp']['GetSystemTheme']();
 }
@@ -172,6 +176,10 @@ export function SearchContacts(arg1, arg2) {
 
 export function SendMessage(arg1, arg2) {
   return window['go']['app']['ComposerApp']['SendMessage'](arg1, arg2);
+}
+
+export function SetSpellcheckActiveLanguage(arg1) {
+  return window['go']['app']['ComposerApp']['SetSpellcheckActiveLanguage'](arg1);
 }
 
 export function Shutdown(arg1) {

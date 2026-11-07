@@ -14,7 +14,7 @@ const APP_TO_DICT: Record<string, string> = {
 }
 
 // Dictionaries bundled as static assets under /spellcheck/<key>.{aff,dic}.
-export const SPELLCHECK_DICTS = ['en', 'en-gb', 'cs', 'de', 'fr', 'it', 'nb', 'nl', 'tr'] as const
+export const SPELLCHECK_DICTS = ['en', 'en-gb', 'cs', 'de', 'es', 'fr', 'it', 'nb', 'nl', 'tr'] as const
 
 // Display-name overrides for dictionaries that don't map 1:1 to an app
 // locale (the settings list otherwise names dicts via supportedLocales).
@@ -22,6 +22,7 @@ export const SPELLCHECK_DICTS = ['en', 'en-gb', 'cs', 'de', 'fr', 'it', 'nb', 'n
 export const DICT_NAMES: Record<string, string> = {
   en: 'English (US)',
   'en-gb': 'English (UK)',
+  es: 'Español',
   nl: 'Nederlands',
 }
 

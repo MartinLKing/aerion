@@ -55,6 +55,8 @@ export function GetSMIMESignPolicy(arg1:string):Promise<string>;
 
 export function GetShowTitleBar():Promise<boolean>;
 
+export function GetSpellcheckActiveLanguage():Promise<string>;
+
 export function GetSystemTheme():Promise<string>;
 
 export function GetThemeMode():Promise<string>;
@@ -96,6 +98,8 @@ export function SaveDraft(arg1:string,arg2:smtp.ComposeMessage,arg3:string):Prom
 export function SearchContacts(arg1:string,arg2:number):Promise<Array<contact.Contact>>;
 
 export function SendMessage(arg1:string,arg2:smtp.ComposeMessage):Promise<void>;
+
+export function SetSpellcheckActiveLanguage(arg1:string):Promise<void>;
 
 export function Shutdown(arg1:context.Context):Promise<void>;
 

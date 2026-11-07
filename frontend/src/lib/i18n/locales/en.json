@@ -178,6 +178,8 @@
     "signature": "Signature",
     "signatureForAddress": "Address signature",
     "signatureNone": "No signature",
+    "spellLanguage": "Spell-check language",
+    "spellLanguageAll": "All enabled",
     "newMessage": "New Message",
     "reply": "Reply",
     "replyAll": "Reply All",

@@ -32,6 +32,12 @@ export interface ComposerApi {
   /** Get the account's default named signature ID; "" when none is set */
   getAccountSignatureDefault: (accountId: string) => Promise<string>
 
+  /** Get the last chosen spell-check language: a dictionary code, "all", or "" if never chosen */
+  getSpellcheckActiveLanguage: () => Promise<string>
+
+  /** Remember the chosen spell-check language */
+  setSpellcheckActiveLanguage: (code: string) => Promise<void>
+
   /** Get the account's default address list for a kind ('bcc' | 'replyto'); "" when disabled */
   getDefaultAddress: (kind: string, accountId: string) => Promise<string>
 
@@ -154,6 +160,16 @@ export function createMainWindowApi(): ComposerApi {
     getAccountSignatureDefault: async (accountId: string) => {
       const { GetAccountSignatureDefault } = await import('../../wailsjs/go/app/App.js')
       return GetAccountSignatureDefault(accountId)
+    },
+
+    getSpellcheckActiveLanguage: async () => {
+      const { GetSpellcheckActiveLanguage } = await import('../../wailsjs/go/app/App.js')
+      return GetSpellcheckActiveLanguage()
+    },
+
+    setSpellcheckActiveLanguage: async (code: string) => {
+      const { SetSpellcheckActiveLanguage } = await import('../../wailsjs/go/app/App.js')
+      return SetSpellcheckActiveLanguage(code)
     },
 
     saveDraft: async (accountId: string, message: smtp.ComposeMessage, draftId: string) => {
@@ -318,6 +334,16 @@ export function createComposerWindowApi(_accountId: string): ComposerApi {
     getAccountSignatureDefault: async (accountId: string) => {
       const { GetAccountSignatureDefault } = await import('../../wailsjs/go/app/ComposerApp.js')
       return GetAccountSignatureDefault(accountId)
+    },
+
+    getSpellcheckActiveLanguage: async () => {
+      const { GetSpellcheckActiveLanguage } = await import('../../wailsjs/go/app/ComposerApp.js')
+      return GetSpellcheckActiveLanguage()
+    },
+
+    setSpellcheckActiveLanguage: async (code: string) => {
+      const { SetSpellcheckActiveLanguage } = await import('../../wailsjs/go/app/ComposerApp.js')
+      return SetSpellcheckActiveLanguage(code)
     },
 
     saveDraft: async (accountId: string, message: smtp.ComposeMessage, draftId: string) => {

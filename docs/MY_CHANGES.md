@@ -67,6 +67,17 @@ Settings has a new Rules tab. A rule matches on sender (contains, equals, in dom
 - A rule files single messages, so a thread can end up split between folders.
 - New: `internal/rules/`, `internal/settings/filter_rules.go`, `internal/message/rule_candidates.go`, `app/rules.go`, `RulesTab.svelte`. No database migration; labels are English only.
 
+## Feature 7: Spell-check language dropdown
+
+The composer's From row has a spell-check language dropdown. Picking a language checks the draft against that dictionary only, so "Hello, je t'aime" gets underlined under English. "All enabled" keeps upstream's behavior, where a word passes if any language switched on in Settings accepts it. The choice is remembered, and English (US) is used until one is picked.
+
+- Works in rich text, plain text and the pop-out composer, which never loaded spell-check settings before.
+- Quoted text is no longer checked: blockquotes, "> " lines, the "On ... wrote:" line, and everything from a forwarded message header on.
+- Added the Spanish dictionary (`dictionary-es`, a new npm dependency) to `locales.ts` and `copy-dictionaries.mjs`.
+- Words added to the user dictionary are accepted in every language. The French dictionary itself accepts "Hello".
+- New: `SpellLanguageSelect.svelte`, `internal/settings/spellcheck_language.go`, `app/spellcheck_language.go`.
+- `wails generate module` writes nothing while Aerion is running, so close the app before regenerating bindings.
+
 ## Action bar for ticked messages
 
 Ticking messages shows a bar at the top of the list with the count, Archive, Delete, Mark read/unread, Star/Unstar, Move to, Select all and Clear. Upstream only offers these through the right-click menu, keyboard shortcuts and drag.

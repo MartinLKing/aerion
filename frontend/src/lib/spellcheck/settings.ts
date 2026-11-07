@@ -17,9 +17,28 @@ export function defaultSpellcheckLanguages(): string[] {
   return [...new Set([ui, 'en'].filter((c): c is string => !!c))]
 }
 
+// The composer's language dropdown. '' means all the languages switched on in
+// Settings, so a word passes if any of them accepts it; a dictionary code
+// checks against that one language only.
+let activeLanguage = ''
+
+export function getActiveSpellLanguage(): string {
+  return activeLanguage
+}
+
+export function setActiveSpellLanguage(code: string): void {
+  activeLanguage = code
+  syncSpellcheckLanguages()
+}
+
 export function syncSpellcheckLanguages(): void {
   if (!getSpellcheckEnabled()) {
     spellcheck.setLanguages([])
+    return
+  }
+  if (activeLanguage) {
+    spellcheck.setLanguages([activeLanguage])
+    for (const w of getSpellcheckCustomWords()) spellcheck.addWord(w)
     return
   }
   const langs = getSpellcheckLanguages()

@@ -378,6 +378,8 @@ export function GetSourceAddressbooks(arg1:string):Promise<Array<carddav.Address
 
 export function GetSpecialFolder(arg1:string,arg2:folder.Type):Promise<folder.Folder>;
 
+export function GetSpellcheckActiveLanguage():Promise<string>;
+
 export function GetSpellcheckCustomWords():Promise<Array<string>>;
 
 export function GetSpellcheckEnabled():Promise<boolean>;
@@ -657,6 +659,8 @@ export function SetShowMessageListProfilePics(arg1:boolean):Promise<void>;
 export function SetShowTitleBar(arg1:boolean):Promise<void>;
 
 export function SetShowViewerCircles(arg1:boolean):Promise<void>;
+
+export function SetSpellcheckActiveLanguage(arg1:string):Promise<void>;
 
 export function SetSpellcheckEnabled(arg1:boolean):Promise<void>;
 
