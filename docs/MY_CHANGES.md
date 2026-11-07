@@ -21,3 +21,12 @@ No code changes. Aerion can already use your own credentials, so these are saved
 **Tooling:** Go 1.25.7 and Wails CLI v2.16.0, matching upstream's CI. Wails is pinned to the version in `go.mod`, because upstream notes that `@latest` broke their release by requiring a newer Go.
 
 **Generated files:** `wails dev` rewrites `frontend/wailsjs/*`, `go.mod` and `frontend/package.json.md5`, so they show as modified in git. These are not real changes and should stay out of commits.
+
+## Feature 2: Attachments always visible in conversations
+
+Every message in a thread, collapsed or expanded, shows its attachments as chips in the message header, with name, size, and Open and Save buttons always visible. Messages with more than one attachment also get a Save all button. This replaces the old list at the bottom of expanded messages.
+
+- Changed: `frontend/src/lib/components/viewer/AttachmentList.svelte` and `ConversationViewer.svelte`.
+- Inline images (signature logos, embedded pictures) get no chip, since they show in the message body.
+- Known quirk: Save all still includes inline images, because it uses the existing backend function.
+- Encrypted mail only shows its attachments after the message is opened and decrypted.
