@@ -2428,6 +2428,22 @@ export namespace settings {
 	        this.createdAt = source["createdAt"];
 	    }
 	}
+	export class NamedSignature {
+	    id: string;
+	    name: string;
+	    html: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NamedSignature(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.html = source["html"];
+	    }
+	}
 
 }
 

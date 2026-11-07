@@ -3,6 +3,7 @@
 import {account} from '../models';
 import {app} from '../models';
 import {smtp} from '../models';
+import {settings} from '../models';
 import {message} from '../models';
 import {pgp} from '../models';
 import {smime} from '../models';
@@ -20,6 +21,8 @@ export function DeleteDraft(arg1:string):Promise<void>;
 
 export function GetAccount(arg1:string):Promise<account.Account>;
 
+export function GetAccountSignatureDefault(arg1:string):Promise<string>;
+
 export function GetAllAccountIdentities():Promise<Array<app.AccountIdentityGroup>>;
 
 export function GetComposeMode():Promise<app.ComposeMode>;
@@ -31,6 +34,8 @@ export function GetDefaultAddress(arg1:string,arg2:string):Promise<string>;
 export function GetDraft():Promise<smtp.ComposeMessage>;
 
 export function GetIdentities(arg1:string):Promise<Array<account.Identity>>;
+
+export function GetNamedSignatures():Promise<Array<settings.NamedSignature>>;
 
 export function GetNativeTitleBar():Promise<boolean>;
 

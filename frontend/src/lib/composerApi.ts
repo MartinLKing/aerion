@@ -10,7 +10,7 @@
  */
 
 // @ts-ignore - Wails generated imports
-import { smtp, account, contact, app, smime, pgp } from '../../wailsjs/go/models'
+import { smtp, account, contact, app, smime, pgp, settings } from '../../wailsjs/go/models'
 
 /**
  * Interface for composer API operations.
@@ -25,6 +25,12 @@ export interface ComposerApi {
 
   /** Get identities for an account */
   getIdentities: (accountId: string) => Promise<account.Identity[]>
+
+  /** Get all named signatures */
+  getNamedSignatures: () => Promise<settings.NamedSignature[]>
+
+  /** Get the account's default named signature ID; "" when none is set */
+  getAccountSignatureDefault: (accountId: string) => Promise<string>
 
   /** Get the account's default address list for a kind ('bcc' | 'replyto'); "" when disabled */
   getDefaultAddress: (kind: string, accountId: string) => Promise<string>
@@ -138,6 +144,16 @@ export function createMainWindowApi(): ComposerApi {
     getIdentities: async (accountId: string) => {
       const { GetIdentities } = await import('../../wailsjs/go/app/App.js')
       return GetIdentities(accountId)
+    },
+
+    getNamedSignatures: async () => {
+      const { GetNamedSignatures } = await import('../../wailsjs/go/app/App.js')
+      return (await GetNamedSignatures()) || []
+    },
+
+    getAccountSignatureDefault: async (accountId: string) => {
+      const { GetAccountSignatureDefault } = await import('../../wailsjs/go/app/App.js')
+      return GetAccountSignatureDefault(accountId)
     },
 
     saveDraft: async (accountId: string, message: smtp.ComposeMessage, draftId: string) => {
@@ -292,6 +308,16 @@ export function createComposerWindowApi(_accountId: string): ComposerApi {
     getIdentities: async (accountId: string) => {
       const { GetIdentities } = await import('../../wailsjs/go/app/ComposerApp.js')
       return GetIdentities(accountId)
+    },
+
+    getNamedSignatures: async () => {
+      const { GetNamedSignatures } = await import('../../wailsjs/go/app/ComposerApp.js')
+      return (await GetNamedSignatures()) || []
+    },
+
+    getAccountSignatureDefault: async (accountId: string) => {
+      const { GetAccountSignatureDefault } = await import('../../wailsjs/go/app/ComposerApp.js')
+      return GetAccountSignatureDefault(accountId)
     },
 
     saveDraft: async (accountId: string, message: smtp.ComposeMessage, draftId: string) => {

@@ -31,6 +31,19 @@ Every message in a thread, collapsed or expanded, shows its attachments as chips
 - Known quirk: Save all still includes inline images, because it uses the existing backend function.
 - Encrypted mail only shows its attachments after the message is opened and decrypted.
 
+## Feature 3: Multiple signatures
+
+Settings has a new Signatures tab for named signatures that work across all accounts, with an optional default per account. The composer has a signature dropdown beside the From field.
+
+- The starting signature is the account's default, or otherwise the address's own signature, and it follows that address's settings for when signatures are added.
+- A signature picked by hand always inserts, and stays if the From address changes.
+- The dropdown is hidden in plain text mode, which doesn't insert signatures. A reopened draft keeps its signature, but the dropdown can't tell which one it is.
+- Saved as JSON in the existing settings table, not a new database table, so there's no migration to clash with upstream's numbered ones.
+- New: `internal/settings/signatures.go`, `app/signatures.go`, `SignaturesTab.svelte`. New labels are English only.
+- Fixed two existing bugs in `composerSignature.ts`, which also affected changing the From address: inserting a signature on a reply or forward discarded text typed above the quote, and removing one could delete quoted text containing an earlier Aerion signature. Upstream changes to these functions may need manual merging.
+
+Bindings in `frontend/wailsjs` were committed for the new functions (`App`, `ComposerApp` and `models.ts`). Generated changes that come with a new backend function belong in the commit; the rest of what `wails dev` rewrites does not.
+
 ## Threads show newest first
 
 Conversations display the newest message at the top and open scrolled to the top. Only the display order changed in `ConversationViewer.svelte`: the underlying list stays oldest-first, because other code (such as replying to the latest message) relies on that.

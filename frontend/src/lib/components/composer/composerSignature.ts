@@ -22,27 +22,55 @@ export function buildSignatureHtml(identity: Identity): string {
   if (!identity.signatureEnabled) return ''
   if (!identity.signatureHtml) return ''
 
-  let html: string
+  return wrapSignatureHtml(identity.signatureHtml, identity.signatureSeparator)
+}
+
+/**
+ * Build insertable HTML for any signature: adds the marker used to find it
+ * again later, plus the optional "-- " separator line.
+ */
+export function wrapSignatureHtml(signatureHtml: string, separator: boolean): string {
+  if (!signatureHtml) return ''
 
   // Add separator line if enabled (with marker at the start)
-  if (identity.signatureSeparator) {
-    html = `<p>${SIGNATURE_MARKER}-- </p>`
-  } else {
-    // Inject marker into the first element of the signature
-    // This ensures TipTap preserves it as text content
-    html = identity.signatureHtml.replace(/^(<p[^>]*>)/, `$1${SIGNATURE_MARKER}`)
-    // If signature doesn't start with <p>, wrap the marker
-    if (!html.includes(SIGNATURE_MARKER)) {
-      html = `<p>${SIGNATURE_MARKER}</p>` + identity.signatureHtml
-    }
+  if (separator) {
+    return `<p>${SIGNATURE_MARKER}-- </p>` + signatureHtml
   }
 
-  // If we added separator, append the rest of the signature
-  if (identity.signatureSeparator) {
-    html += identity.signatureHtml
+  // Inject marker into the first element of the signature
+  // This ensures TipTap preserves it as text content
+  const html = signatureHtml.replace(/^(<p[^>]*>)/, `$1${SIGNATURE_MARKER}`)
+  // If signature doesn't start with <p>, wrap the marker
+  if (!html.includes(SIGNATURE_MARKER)) {
+    return `<p>${SIGNATURE_MARKER}</p>` + signatureHtml
   }
-
   return html
+}
+
+/**
+ * Text the user has written above quoted content, followed by the spacing that
+ * goes before a signature. Trailing blank lines are dropped so that swapping
+ * signatures repeatedly doesn't add more each time.
+ */
+function typedContentBeforeSignature(typed: string): string {
+  const trimmed = typed.replace(/(<p[^>]*>(\s|<br[^>]*>)*<\/p>\s*)+$/i, '')
+  // Nothing typed: typing area + blank line below content
+  if (!trimmed.trim()) return '<p></p><p></p>'
+  return trimmed + '<p></p>'
+}
+
+/**
+ * The part of the content above any quoted text (citation line, forwarded
+ * message header or blockquote). Quoted history can hold signature markers from
+ * earlier replies, so only this part reliably shows the current signature.
+ */
+export function getPreQuoteContent(content: string): string {
+  const quoteIdx = content.indexOf('<blockquote')
+  const wroteIdx = content.search(/wrote:\s*(<br[^>]*>)?\s*<\/p>/i)
+  const fwdIdx = content.indexOf('---------- Forwarded message ----------')
+  const boundaries = [quoteIdx, wroteIdx, fwdIdx].filter(i => i > -1)
+  const quoteBoundary = boundaries.length > 0 ? Math.min(...boundaries) : content.length
+  return content.substring(0, quoteBoundary)
 }
 
 /**
@@ -83,8 +111,8 @@ export function insertSignatureIntoContent(
       const pStart = before.lastIndexOf('<p')
       if (pStart > -1) {
         const quotedContent = content.substring(pStart)
-        // typing area + blank line below content + signature + 2 blank lines before citation
-        return '<p></p><p></p>' + signatureHtml + '<p></p><p></p>' + quotedContent
+        // typed text + blank line below content + signature + 2 blank lines before citation
+        return typedContentBeforeSignature(content.substring(0, pStart)) + signatureHtml + '<p></p><p></p>' + quotedContent
       }
     }
 
@@ -95,7 +123,7 @@ export function insertSignatureIntoContent(
       const fwdPStart = fwdBefore.lastIndexOf('<p')
       if (fwdPStart > -1) {
         const forwardedContent = content.substring(fwdPStart)
-        return '<p></p><p></p>' + signatureHtml + '<p></p><p></p>' + forwardedContent
+        return typedContentBeforeSignature(content.substring(0, fwdPStart)) + signatureHtml + '<p></p><p></p>' + forwardedContent
       }
     }
 
@@ -103,8 +131,8 @@ export function insertSignatureIntoContent(
     const blockquoteIndex = content.indexOf('<blockquote')
     if (blockquoteIndex > -1) {
       const blockquote = content.substring(blockquoteIndex)
-      // typing area + blank line below content + signature + 2 blank lines before citation
-      return '<p></p><p></p>' + signatureHtml + '<p></p><p></p>' + blockquote
+      // typed text + blank line below content + signature + 2 blank lines before citation
+      return typedContentBeforeSignature(content.substring(0, blockquoteIndex)) + signatureHtml + '<p></p><p></p>' + blockquote
     }
   }
 
@@ -118,10 +146,11 @@ export function insertSignatureIntoContent(
 }
 
 /**
- * Remove signature from content using the marker, preserving quoted content (replies/forwards)
+ * Remove signature from content using the marker, preserving quoted content (replies/forwards).
+ * Uses the first marker, or the last one with fromEnd (for a signature placed below quoted text).
  */
-export function removeSignatureFromContent(content: string): string {
-  const markerIndex = content.indexOf(SIGNATURE_MARKER)
+export function removeSignatureFromContent(content: string, fromEnd: boolean = false): string {
+  const markerIndex = fromEnd ? content.lastIndexOf(SIGNATURE_MARKER) : content.indexOf(SIGNATURE_MARKER)
   if (markerIndex === -1) return content
 
   // Find the start of the element containing the marker (the <p> tag)

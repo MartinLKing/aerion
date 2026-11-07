@@ -22,6 +22,10 @@ export function GetAccount(arg1) {
   return window['go']['app']['ComposerApp']['GetAccount'](arg1);
 }
 
+export function GetAccountSignatureDefault(arg1) {
+  return window['go']['app']['ComposerApp']['GetAccountSignatureDefault'](arg1);
+}
+
 export function GetAllAccountIdentities() {
   return window['go']['app']['ComposerApp']['GetAllAccountIdentities']();
 }
@@ -44,6 +48,10 @@ export function GetDraft() {
 
 export function GetIdentities(arg1) {
   return window['go']['app']['ComposerApp']['GetIdentities'](arg1);
+}
+
+export function GetNamedSignatures() {
+  return window['go']['app']['ComposerApp']['GetNamedSignatures']();
 }
 
 export function GetNativeTitleBar() {

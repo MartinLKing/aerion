@@ -169,6 +169,8 @@ export function DeleteIdentity(arg1:string):Promise<void>;
 
 export function DeleteLocalMessages(arg1:Array<string>):Promise<void>;
 
+export function DeleteNamedSignature(arg1:string):Promise<void>;
+
 export function DeletePGPKey(arg1:string):Promise<void>;
 
 export function DeletePGPSenderKey(arg1:string):Promise<void>;
@@ -210,6 +212,8 @@ export function GetAccentUnreadStyle():Promise<string>;
 export function GetAccount(arg1:string):Promise<account.Account>;
 
 export function GetAccountFoldersForMapping(arg1:string):Promise<Array<folder.Folder>>;
+
+export function GetAccountSignatureDefault(arg1:string):Promise<string>;
 
 export function GetAccounts():Promise<Array<account.Account>>;
 
@@ -314,6 +318,8 @@ export function GetMessageSource(arg1:string):Promise<string>;
 export function GetMessages(arg1:string,arg2:string,arg3:number,arg4:number):Promise<Array<message.MessageHeader>>;
 
 export function GetMicrosoftSharedMailboxes(arg1:string):Promise<Array<account.Account>>;
+
+export function GetNamedSignatures():Promise<Array<settings.NamedSignature>>;
 
 export function GetNativeTitleBar():Promise<boolean>;
 
@@ -541,6 +547,8 @@ export function SaveDraft(arg1:string,arg2:smtp.ComposeMessage,arg3:string):Prom
 
 export function SaveEncryptedAttachmentAs(arg1:string,arg2:string):Promise<string>;
 
+export function SaveNamedSignature(arg1:settings.NamedSignature):Promise<settings.NamedSignature>;
+
 export function SavePendingOAuthTokens(arg1:string):Promise<void>;
 
 export function SaveUIState(arg1:appstate.UIState):Promise<void>;
@@ -560,6 +568,8 @@ export function SetAccentBarUnread(arg1:boolean):Promise<void>;
 export function SetAccentUnreadStyle(arg1:string):Promise<void>;
 
 export function SetAccountEnabled(arg1:string,arg2:boolean):Promise<void>;
+
+export function SetAccountSignatureDefault(arg1:string,arg2:string):Promise<void>;
 
 export function SetAddressbookEnabled(arg1:string,arg2:boolean):Promise<void>;
 

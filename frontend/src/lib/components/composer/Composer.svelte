@@ -5,7 +5,7 @@
   import { createComposerEditor } from './composerEditor'
   import PlainTextEditor from './PlainTextEditor.svelte'
   // @ts-ignore - Wails generated imports
-  import { smtp, account, app } from '../../../../wailsjs/go/models'
+  import { smtp, account, app, settings } from '../../../../wailsjs/go/models'
   // @ts-ignore - Wails runtime for events
   import { EventsOn, EventsOff } from '../../../../wailsjs/runtime/runtime.js'
   import { type ComposerApi, COMPOSER_API_KEY, createMainWindowApi } from '$lib/composerApi'
@@ -47,6 +47,8 @@
     insertSignatureIntoContent,
     removeSignatureFromContent,
     hasSignatureMarker,
+    wrapSignatureHtml,
+    getPreQuoteContent,
   } from './composerSignature'
   import * as Select from '$lib/components/ui/select'
   import * as AlertDialog from '$lib/components/ui/alert-dialog'
@@ -106,6 +108,27 @@
   let allGroups = $state<app.AccountIdentityGroup[]>([])  // All accounts + identities (main window only)
   let identities = $state<account.Identity[]>([])  // Flat list of all identities (union)
   let selectedIdentityId = $state<string>('')
+
+  // Signature dropdown. signatureChoice is a named signature's ID, or one of the
+  // values below. It stays '' for a reopened draft, whose signature is unknown.
+  const SIGNATURE_IDENTITY = 'identity'
+  const SIGNATURE_NONE = 'none'
+  let namedSignatures = $state<settings.NamedSignature[]>([])
+  let signatureChoice = $state<string>('')
+  // A hand-picked signature survives changing the From address
+  let signaturePickedByHand = false
+  // Set while a signature sits below quoted text, where getPreQuoteContent can't see it
+  let signatureBelowQuote = false
+
+  const selectedIdentityHasSignature = $derived.by(() => {
+    const identity = identities.find(i => i.id === selectedIdentityId)
+    return !!identity?.signatureEnabled && !!identity?.signatureHtml
+  })
+  const signatureLabel = $derived.by(() => {
+    if (signatureChoice === SIGNATURE_IDENTITY) return $_('composer.signatureForAddress')
+    if (signatureChoice === SIGNATURE_NONE) return $_('composer.signatureNone')
+    return namedSignatures.find(s => s.id === signatureChoice)?.name || $_('composer.signature')
+  })
 
   // Derive the active account ID from the selected identity's accountId.
   // Falls back to the prop accountId if no identity is selected yet.
@@ -768,6 +791,12 @@
       console.error('Failed to load identities:', err)
     }
 
+    try {
+      namedSignatures = await api.getNamedSignatures()
+    } catch (err) {
+      console.error('Failed to load named signatures:', err)
+    }
+
     // Load account's read receipt request policy (use activeAccountId which derives from selected identity)
     try {
       const acc = await api.getAccount(activeAccountId)
@@ -857,21 +886,15 @@
     // Append signature for the selected identity (after editor is ready)
     // Only if signature doesn't already exist in content (e.g., from loaded draft)
     // Then focus the To field once everything is initialized
-    setTimeout(() => {
+    setTimeout(async () => {
       const identity = identities.find(i => i.id === selectedIdentityId)
       if (identity) {
         const content = editor?.getHTML() || ''
         // Don't append if signature marker already exists in the user's compose area.
         // Only check content before the quoted section — markers inside quoted history
         // (from previous replies with signatures) should not prevent injection.
-        const quoteIdx = content.indexOf('<blockquote')
-        const wroteIdx = content.search(/wrote:\s*(<br[^>]*>)?\s*<\/p>/i)
-        const fwdIdx = content.indexOf('---------- Forwarded message ----------')
-        const boundaries = [quoteIdx, wroteIdx, fwdIdx].filter(i => i > -1)
-        const quoteBoundary = boundaries.length > 0 ? Math.min(...boundaries) : content.length
-        const preQuoteContent = content.substring(0, quoteBoundary)
-        if (!hasSignatureMarker(preQuoteContent)) {
-          appendSignatureForIdentity(identity)
+        if (!hasSignatureMarker(getPreQuoteContent(content))) {
+          await appendSignatureForIdentity(identity)
         }
       }
       // Focus editor body for reply/reply-all, To field for new/forward
@@ -914,25 +937,75 @@
     ) || null
   }
 
-  // Append signature for the current identity based on compose mode
-  function appendSignatureForIdentity(identity: account.Identity) {
+  // Append the starting signature for an identity: a hand-picked one if any,
+  // otherwise the account's default, otherwise the identity's own signature.
+  async function appendSignatureForIdentity(identity: account.Identity) {
     if (!editor) return
 
-    const mode = getDisplayMode()
-    if (!shouldAppendSignature(identity, mode)) return
+    if (signaturePickedByHand) {
+      insertSignatureChoice(identity, signatureChoice)
+      return
+    }
 
-    const signatureHtml = buildSignatureHtml(identity)
-    if (!signatureHtml) return
+    if (!shouldAppendSignature(identity, getDisplayMode())) {
+      signatureChoice = SIGNATURE_NONE
+      return
+    }
+
+    let choice = SIGNATURE_IDENTITY
+    try {
+      choice = (await api.getAccountSignatureDefault(identity.accountId)) || SIGNATURE_IDENTITY
+    } catch (err) {
+      console.error('Failed to load account signature default:', err)
+    }
+    signatureChoice = insertSignatureChoice(identity, choice) ? choice : SIGNATURE_NONE
+  }
+
+  // Insert the chosen signature. Returns false if there was nothing to insert.
+  function insertSignatureChoice(identity: account.Identity, choice: string): boolean {
+    if (!editor) return false
+
+    let signatureHtml = ''
+    if (choice === SIGNATURE_IDENTITY) {
+      signatureHtml = buildSignatureHtml(identity)
+    } else if (choice !== SIGNATURE_NONE) {
+      const named = namedSignatures.find(s => s.id === choice)
+      signatureHtml = named ? wrapSignatureHtml(named.html, identity.signatureSeparator) : ''
+    }
+    if (!signatureHtml) return false
+
+    const placement = identity.signaturePlacement || 'above'
+    editor.commands.setContent(
+      insertSignatureIntoContent(editor.getHTML(), signatureHtml, getDisplayMode(), placement)
+    )
+    signatureBelowQuote = placement === 'below'
+    return true
+  }
+
+  // Take the current signature out of the editor, leaving any signature markers
+  // inside quoted history (and so the quoted text itself) alone.
+  function removeCurrentSignature() {
+    if (!editor) return
 
     const content = editor.getHTML()
-    const newContent = insertSignatureIntoContent(
-      content,
-      signatureHtml,
-      mode,
-      identity.signaturePlacement || 'above'
-    )
+    if (hasSignatureMarker(getPreQuoteContent(content))) {
+      editor.commands.setContent(removeSignatureFromContent(content))
+    } else if (signatureBelowQuote) {
+      editor.commands.setContent(removeSignatureFromContent(content, true))
+    }
+    signatureBelowQuote = false
+  }
 
-    editor.commands.setContent(newContent)
+  // Handle a pick from the signature dropdown
+  function handleSignatureChange(choice: string) {
+    const identity = identities.find(i => i.id === selectedIdentityId)
+    if (!editor || !identity || choice === signatureChoice) return
+
+    signaturePickedByHand = true
+    signatureChoice = choice
+    removeCurrentSignature()
+    insertSignatureChoice(identity, choice)
+    scheduleDraftSave()
   }
 
   // Update security bar visibility based on the selected identity's email
@@ -1037,11 +1110,8 @@
     updateSecurityForIdentity(newIdentity.email)
 
     // Remove old signature and apply new one
-    const content = removeSignatureFromContent(editor.getHTML())
-    editor.commands.setContent(content)
-
-    appendSignatureForIdentity(newIdentity)
-    scheduleDraftSave()
+    removeCurrentSignature()
+    appendSignatureForIdentity(newIdentity).finally(scheduleDraftSave)
   }
 
   onDestroy(() => {
@@ -1981,6 +2051,27 @@
           </Select.Content>
         </Select.Root>
       </div>
+      <!-- Signature picker (rich text only: plain text mode has no signature insertion) -->
+      {#if !isPlainTextMode && (namedSignatures.length > 0 || selectedIdentityHasSignature)}
+        <div class="w-44 flex-shrink-0">
+          <Select.Root value={signatureChoice} onValueChange={handleSignatureChange}>
+            <Select.Trigger class="h-8 px-2 text-sm border-0 bg-transparent shadow-none focus:ring-0">
+              <Select.Value placeholder={$_('composer.signature')}>
+                <span class="truncate">{signatureLabel}</span>
+              </Select.Value>
+            </Select.Trigger>
+            <Select.Content>
+              {#each namedSignatures as signature (signature.id)}
+                <Select.Item value={signature.id} label={signature.name} />
+              {/each}
+              {#if selectedIdentityHasSignature}
+                <Select.Item value={SIGNATURE_IDENTITY} label={$_('composer.signatureForAddress')} />
+              {/if}
+              <Select.Item value={SIGNATURE_NONE} label={$_('composer.signatureNone')} />
+            </Select.Content>
+          </Select.Root>
+        </div>
+      {/if}
       {#if !showReplyTo}
         <div class="flex items-center gap-1 text-sm text-muted-foreground">
           <button onclick={() => showReplyTo = true} class="hover:text-foreground">{$_('composer.replyTo')}</button>

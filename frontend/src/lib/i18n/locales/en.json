@@ -171,6 +171,9 @@
     "darkMailToDark": "Apply dark filter to this email"
   },
   "composer": {
+    "signature": "Signature",
+    "signatureForAddress": "Address signature",
+    "signatureNone": "No signature",
     "newMessage": "New Message",
     "reply": "Reply",
     "replyAll": "Reply All",
@@ -366,6 +369,7 @@
     "extensionsNone": "No extensions are available in this build.",
     "images": "Images",
     "composer": "Composer",
+    "signatures": "Signatures",
     "composerMode": "Default compose mode",
     "composerModeInline": "In window",
     "composerModeDetached": "Detached window",
@@ -457,6 +461,23 @@
     "alwaysLoadImagesWarningTitle": "Privacy & security risk",
     "alwaysLoadImagesWarningDescription": "Loading remote images automatically can expose your IP address, confirm when you read an email, and allow tracking by senders. Are you sure you want to disable image blocking?",
     "disable": "Disable"
+  },
+  "settingsSignatures": {
+    "title": "Named signatures",
+    "help": "Reusable signatures you can pick in the composer, for any account.",
+    "add": "Add signature",
+    "empty": "No named signatures yet.",
+    "name": "Name",
+    "namePlaceholder": "Work, Short, Personal...",
+    "content": "Signature",
+    "defaultsTitle": "Default per account",
+    "defaultsHelp": "The signature new messages start with. It follows each address's settings for when and where signatures are added.",
+    "useAddressSignature": "Use the address's signature",
+    "deleteTitle": "Delete signature?",
+    "deleteDescription": "\"{name}\" will be removed. Messages already sent aren't affected.",
+    "failedToLoad": "Failed to load signatures",
+    "failedToSave": "Failed to save signature",
+    "failedToDelete": "Failed to delete signature"
   },
   "settingsAccounts": {
     "emailAccounts": "Email Accounts",

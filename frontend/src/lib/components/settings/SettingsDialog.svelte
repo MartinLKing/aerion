@@ -15,6 +15,7 @@
   import ConfirmDialog from '$lib/components/ui/confirm-dialog/ConfirmDialog.svelte'
   import GeneralTab from './GeneralTab.svelte'
   import ComposerTab from './ComposerTab.svelte'
+  import SignaturesTab from './SignaturesTab.svelte'
   import ImagesTab from './ImagesTab.svelte'
   import AccountsTab from './AccountsTab.svelte'
   import ContactsTab from './ContactsTab.svelte'
@@ -283,7 +284,7 @@
       </div>
     {:else}
       <Tabs.Root bind:value={activeTab} class="w-full">
-        <Tabs.List class="grid w-full grid-cols-7">
+        <Tabs.List class="grid w-full grid-cols-8">
           <Tabs.Trigger value="general" class="flex items-center gap-2">
             <span class="inline-flex w-4 h-4 items-center justify-center shrink-0"><Icon icon="lucide:settings-2" width="16" height="16" /></span>
             {$_('settings.general')}
@@ -291,6 +292,10 @@
           <Tabs.Trigger value="composer" class="flex items-center gap-2">
             <span class="inline-flex w-4 h-4 items-center justify-center shrink-0"><Icon icon="lucide:square-pen" width="46" height="46" /></span>
             {$_('settings.composer')}
+          </Tabs.Trigger>
+          <Tabs.Trigger value="signatures" class="flex items-center gap-2">
+            <span class="inline-flex w-4 h-4 items-center justify-center shrink-0"><Icon icon="mdi:signature-text" width="16" height="16" /></span>
+            {$_('settings.signatures')}
           </Tabs.Trigger>
           <Tabs.Trigger value="images" class="flex items-center gap-2">
             <span class="inline-flex w-4 h-4 items-center justify-center shrink-0"><Icon icon="lucide:image" width="16" height="16" /></span>
@@ -360,6 +365,10 @@
               onSpellcheckEnabledChange={(v) => spellcheckEnabled = v}
               onSpellcheckLanguagesChange={(v) => spellcheckLanguages = v}
             />
+          </Tabs.Content>
+
+          <Tabs.Content value="signatures" class="mt-0">
+            <SignaturesTab />
           </Tabs.Content>
 
           <Tabs.Content value="images" class="mt-0">

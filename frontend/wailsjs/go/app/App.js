@@ -302,6 +302,10 @@ export function DeleteLocalMessages(arg1) {
   return window['go']['app']['App']['DeleteLocalMessages'](arg1);
 }
 
+export function DeleteNamedSignature(arg1) {
+  return window['go']['app']['App']['DeleteNamedSignature'](arg1);
+}
+
 export function DeletePGPKey(arg1) {
   return window['go']['app']['App']['DeletePGPKey'](arg1);
 }
@@ -384,6 +388,10 @@ export function GetAccount(arg1) {
 
 export function GetAccountFoldersForMapping(arg1) {
   return window['go']['app']['App']['GetAccountFoldersForMapping'](arg1);
+}
+
+export function GetAccountSignatureDefault(arg1) {
+  return window['go']['app']['App']['GetAccountSignatureDefault'](arg1);
 }
 
 export function GetAccounts() {
@@ -592,6 +600,10 @@ export function GetMessages(arg1, arg2, arg3, arg4) {
 
 export function GetMicrosoftSharedMailboxes(arg1) {
   return window['go']['app']['App']['GetMicrosoftSharedMailboxes'](arg1);
+}
+
+export function GetNamedSignatures() {
+  return window['go']['app']['App']['GetNamedSignatures']();
 }
 
 export function GetNativeTitleBar() {
@@ -1046,6 +1058,10 @@ export function SaveEncryptedAttachmentAs(arg1, arg2) {
   return window['go']['app']['App']['SaveEncryptedAttachmentAs'](arg1, arg2);
 }
 
+export function SaveNamedSignature(arg1) {
+  return window['go']['app']['App']['SaveNamedSignature'](arg1);
+}
+
 export function SavePendingOAuthTokens(arg1) {
   return window['go']['app']['App']['SavePendingOAuthTokens'](arg1);
 }
@@ -1084,6 +1100,10 @@ export function SetAccentUnreadStyle(arg1) {
 
 export function SetAccountEnabled(arg1, arg2) {
   return window['go']['app']['App']['SetAccountEnabled'](arg1, arg2);
+}
+
+export function SetAccountSignatureDefault(arg1, arg2) {
+  return window['go']['app']['App']['SetAccountSignatureDefault'](arg1, arg2);
 }
 
 export function SetAddressbookEnabled(arg1, arg2) {
