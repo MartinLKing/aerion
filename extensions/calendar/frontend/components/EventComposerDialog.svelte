@@ -43,6 +43,14 @@
     scope?: 'this' | 'this-and-future' | 'all'
     defaultStart?: Date | null
     defaultCalendarId?: string
+    // Prefill for a new event, such as one made from an email. All optional;
+    // without them a new event starts empty as before.
+    defaultEnd?: Date | null
+    defaultAllDay?: boolean
+    initialSummary?: string
+    initialDescriptionHTML?: string
+    /** Short note shown under the title, such as where the prefill came from */
+    notice?: string
     onClose?: () => void
     onSaved?: () => void
   }
@@ -54,6 +62,11 @@
     scope = 'all',
     defaultStart = null,
     defaultCalendarId = '',
+    defaultEnd = null,
+    defaultAllDay = false,
+    initialSummary = '',
+    initialDescriptionHTML = '',
+    notice = '',
     onClose,
     onSaved,
   }: Props = $props()
@@ -77,7 +90,7 @@
   // synchronously from `existing` BEFORE the editor mounts — the editor reads
   // it once in onMount; no reactive content-syncing.
   let initialBody = $derived(
-    mode === 'edit' && existing ? existing.descriptionHTML || existing.description || '' : '',
+    mode === 'edit' && existing ? existing.descriptionHTML || existing.description || '' : initialDescriptionHTML,
   )
   let transparency = $state('busy') // 'busy' | 'free'
   let visibility = $state('public') // 'public' | 'private' | 'confidential'
@@ -384,6 +397,14 @@
       : null
   }
 
+  // Plain text fallback for a prefilled description (the editor supplies its
+  // own once the user types)
+  function htmlToPlainText(html: string): string {
+    const el = document.createElement('div')
+    el.innerHTML = html.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n')
+    return (el.textContent ?? '').trim()
+  }
+
   function initCreateDefaults() {
     const tz = calendarSettings.effectiveTimezone
     // Resolution order: caller-passed defaultCalendarId → stored global
@@ -405,15 +426,16 @@
         refInTz.setHours(refInTz.getHours() + 1)
       }
     }
-    const endRef = new Date(refInTz)
+    let endRef = new Date(refInTz)
     endRef.setHours(endRef.getHours() + 1)
-    summary = ''
+    if (defaultEnd && defaultEnd > ref) endRef = toZonedTime(defaultEnd, tz)
+    summary = initialSummary
     location = ''
-    description = ''
-    descriptionHTML = ''
+    descriptionHTML = initialDescriptionHTML
+    description = initialDescriptionHTML ? htmlToPlainText(initialDescriptionHTML) : ''
     transparency = 'busy'
     visibility = 'public'
-    isAllDay = false
+    isAllDay = defaultAllDay
     startDate = formatYMD(refInTz)
     startTime = formatHM(refInTz)
     endDate = formatYMD(endRef)
@@ -696,6 +718,12 @@
       <Dialog.Title>
         {mode === 'edit' ? $_('calendar.composer.titleEdit') : $_('calendar.composer.titleCreate')}
       </Dialog.Title>
+      {#if notice && mode === 'create'}
+        <p class="text-xs text-muted-foreground flex items-center gap-1.5">
+          <Icon icon="mdi:information-outline" class="w-4 h-4 flex-shrink-0" />
+          {notice}
+        </p>
+      {/if}
     </Dialog.Header>
 
     <div class="space-y-3 mt-2 max-h-[60vh] overflow-y-auto pl-1 pr-3">

@@ -67,6 +67,30 @@ Settings has a new Rules tab. A rule matches on sender (contains, equals, in dom
 - A rule files single messages, so a thread can end up split between folders.
 - New: `internal/rules/`, `internal/settings/filter_rules.go`, `internal/message/rule_candidates.go`, `app/rules.go`, `RulesTab.svelte`. No database migration; labels are English only.
 
+## Feature 8: Google Calendar and "Add to calendar" from email
+
+**Setup (no code):** Aerion's calendar extension already does two-way Google Calendar sync and event create/edit/delete. To connect it:
+- Enable the Google Calendar API in the Google Cloud project.
+- Enter the same OAuth client in the Calendar extension's own credentials slot (`google-calendar`, under Settings → Extensions → Calendar), choosing the custom option.
+- Add the calendar from the Calendar view with Add calendar → Google.
+- Google's 7-day sign-in limit in Testing mode applies here too.
+
+**Add to calendar (code):** each expanded email has an "Add to calendar" link that opens the calendar's normal new-event form, prefilled:
+- Title: the subject.
+- Description: the sender, when it arrived, and the first 500 characters of the email.
+- Date and time: found by `frontend/src/lib/calendar/detectEventDate.ts`, checking the subject, then the email text.
+
+How the date finder works:
+- Understands English, French, German and Spanish wording (12/11/2026, 12 novembre à 14h30, 12. November um 14 Uhr, 12 de noviembre, November 12 2:30 pm), and time ranges (9h à 11h, 14:00-15:30, von 14 bis 16 Uhr).
+- Reads numeric dates day first. Numeric dates need a year, so version numbers aren't mistaken for dates.
+- Prefers the first upcoming date. If every date has passed, it uses the first one and the form says so. A yearless date from the last 60 days counts as this year.
+- Doesn't understand relative words like "tomorrow".
+
+How it's wired up:
+- `EventComposerDialog.svelte` (upstream calendar code) gained optional settings `initialSummary`, `initialDescriptionHTML`, `defaultEnd`, `defaultAllDay` and `notice`. Without them it behaves as before.
+- `AddToCalendarButton.svelte` loads the calendar code only when clicked, and the link only appears when the Calendar extension is enabled.
+- The date finder was tested with 40 phrasings in a scratch script. The frontend has no test runner, so those tests aren't in the repo.
+
 ## Feature 6: Translation (Azure Translator)
 
 Emails, selected text and drafts can be translated with Azure Translator. Nothing is sent until you click.

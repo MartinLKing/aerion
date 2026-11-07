@@ -5,6 +5,8 @@
   import { GetConversation, GetReadReceiptResponsePolicy, SendReadReceipt, IgnoreReadReceipt, GetMarkAsReadDelay, GetMessageSource, ProcessSMIMEMessage, ProcessPGPMessage, FetchMessageBody, GetTranslationSettings, TranslateMessage } from '../../../../wailsjs/go/app/App'
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
   import { detectedLanguageName, translationLanguageName } from '$lib/translation/languages'
+  import { isExtensionEnabled } from '$lib/stores/extensionRegistry.svelte'
+  import AddToCalendarButton from './AddToCalendarButton.svelte'
   import { locale } from '$lib/i18n'
   // @ts-ignore - wailsjs bindings
   import { MarkAsRead, MarkAsUnread, Star, Unstar, Archive, Trash, MarkAsSpam, MarkAsNotSpam, DeletePermanently, Undo } from '../../../../wailsjs/go/app/App'
@@ -1837,11 +1839,13 @@
                         </div>
                       {/if}
 
-                      <!-- Translation controls (only when set up, never for encrypted or signed mail) -->
-                      {#if canTranslate(msg) && msg.bodyFetched !== false}
+                      <!-- Message tools: translation (only when set up, never for encrypted or
+                           signed mail) and Add to calendar (when the Calendar extension is on) -->
+                      {#if (canTranslate(msg) || isExtensionEnabled('calendar')) && msg.bodyFetched !== false}
                         {@const translation = translations[msg.id]}
                         {@const showing = showingTranslation.has(msg.id) && !!translation}
                         <div class="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+                          {#if canTranslate(msg)}
                           <Icon icon="mdi:translate" class="w-4 h-4 flex-shrink-0" />
                           {#if translatingIds.has(msg.id)}
                             <span class="flex items-center gap-1">
@@ -1878,6 +1882,12 @@
                                 {/each}
                               </DropdownMenu.Content>
                             </DropdownMenu.Root>
+                          {/if}
+                          {/if}
+                          {#if isExtensionEnabled('calendar')}
+                            <span class="ml-auto">
+                              <AddToCalendarButton {msg} />
+                            </span>
                           {/if}
                         </div>
                       {/if}

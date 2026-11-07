@@ -469,6 +469,16 @@
     "alwaysLoadImagesWarningDescription": "Loading remote images automatically can expose your IP address, confirm when you read an email, and allow tracking by senders. Are you sure you want to disable image blocking?",
     "disable": "Disable"
   },
+  "addToCalendar": {
+    "button": "Add to calendar",
+    "from": "From",
+    "received": "Received",
+    "dateFound": "Date found in the email. Please check it.",
+    "pastDateFound": "Date found in the email, but it has already passed. Please check it.",
+    "noDateFound": "No date found in the email, so it starts at the next half hour.",
+    "noCalendar": "Connect a calendar first: open the Calendar view and choose Add calendar.",
+    "failed": "Couldn't open the event form"
+  },
   "translation": {
     "title": "Translation",
     "help": "Translate emails and drafts with Azure Translator. Text is only sent to Microsoft when you click translate.",
