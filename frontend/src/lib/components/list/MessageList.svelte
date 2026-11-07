@@ -14,6 +14,7 @@
   import { onMount, onDestroy } from 'svelte'
   import Icon from '@iconify/svelte'
   import ConversationRow from './ConversationRow.svelte'
+  import BulkActionBar from './BulkActionBar.svelte'
   import { DropdownMenu } from 'bits-ui'
   import { cn } from '$lib/utils'
   import { Button } from '$lib/components/ui/button'
@@ -421,6 +422,16 @@
       .some((c: any) => (c.unreadCount || 0) > 0)
   )
 
+  // The ticked conversations still in the list. Sync can remove one while it's
+  // ticked, so this can be fewer than checkedThreadIds holds.
+  const checkedConversations = $derived.by(() => {
+    const byThread = new Map<string, any>()
+    for (const c of [...conversations, ...searchResults] as any[]) {
+      if (checkedThreadIds.has(c.threadId)) byThread.set(c.threadId, c)
+    }
+    return [...byThread.values()]
+  })
+
   // Clear multi-select (called when right-clicking on unchecked row)
   function clearSelection() {
     checkedThreadIds = new Set()
@@ -816,6 +827,8 @@
 
   // Check if we're in search mode with results
   const isSearchMode = $derived(showSearch && searchQuery.trim().length > 0)
+  // Searching all accounts from inside Trash lists mail that isn't in Trash
+  const deleteIsPermanent = $derived(folderType === 'trash' && !(isSearchMode && searchesAllMail))
 
   // Active list - either conversations, local search results, or server search results
   const activeList = $derived(
@@ -1404,7 +1417,7 @@
   // Shared delete handler — same flow as context menu "Delete" action
   // Set permanent=true to force permanent delete (e.g. Shift+Delete)
   export function requestDelete(messageIds: string[], permanent: boolean = false) {
-    if (permanent || folderType === 'trash') {
+    if (permanent || deleteIsPermanent) {
       pendingDeleteIds = messageIds
       showDeleteConfirm = true
       return
@@ -1628,6 +1641,27 @@
         <Icon icon="mdi:close" class="w-3 h-3" />
       </button>
     </div>
+  {/if}
+
+  <!-- Actions for ticked conversations -->
+  {#if selectedMessageIds.length > 0}
+    <BulkActionBar
+      messageIds={selectedMessageIds}
+      count={checkedConversations.length}
+      totalCount={activeList.length}
+      hasUnstarred={selectedHasUnstarred}
+      hasUnread={selectedHasUnread}
+      {deleteIsPermanent}
+      initialAccountId={checkedConversations[0]?.accountId || (isUnifiedView ? '' : accountId) || ''}
+      currentFolderId={isUnifiedView || isSearchMode ? '' : (folderId || '')}
+      onDelete={() => requestDelete(selectedMessageIds)}
+      onSelectAll={selectAll}
+      onClear={clearChecked}
+      onActionComplete={(removed) => {
+        handleActionComplete(removed)
+        if (removed) clearChecked()
+      }}
+    />
   {/if}
 
   <!-- Empty Trash/Spam bar (only shown when viewing trash or spam folder with messages, not in search mode) -->

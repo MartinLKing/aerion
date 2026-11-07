@@ -67,6 +67,14 @@ Settings has a new Rules tab. A rule matches on sender (contains, equals, in dom
 - A rule files single messages, so a thread can end up split between folders.
 - New: `internal/rules/`, `internal/settings/filter_rules.go`, `internal/message/rule_candidates.go`, `app/rules.go`, `RulesTab.svelte`. No database migration; labels are English only.
 
+## Action bar for ticked messages
+
+Ticking messages shows a bar at the top of the list with the count, Archive, Delete, Mark read/unread, Star/Unstar, Move to, Select all and Clear. Upstream only offers these through the right-click menu, keyboard shortcuts and drag.
+
+- New: `frontend/src/lib/components/list/BulkActionBar.svelte`. It's shown from `MessageList.svelte` and uses the same backend actions as the right-click menu.
+- Select all only ticks the messages loaded in the list. The bar doesn't appear for server search results, which may not be downloaded.
+- Fixed a bug from feature 4: inside Trash, deleting an All accounts search result offered a permanent delete, though the result wasn't in Trash.
+
 ## Threads show newest first
 
 Conversations display the newest message at the top and open scrolled to the top. Only the display order changed in `ConversationViewer.svelte`: the underlying list stays oldest-first, because other code (such as replying to the latest message) relies on that.

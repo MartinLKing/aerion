@@ -62,6 +62,10 @@
   },
   "messageList": {
     "searchMessages": "Search messages...",
+    "selectedCount": "{count} selected",
+    "selectionActions": "Actions for selected messages",
+    "selectAllLoaded": "Select all",
+    "clearSelection": "Clear",
     "noMessages": "No messages in this folder",
     "olderThanSyncPeriod": "This folder has {count} messages on the server that are older than your sync period",
     "selectFolder": "Select a folder to view messages",
