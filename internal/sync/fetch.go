@@ -979,6 +979,7 @@ func (e *Engine) buildMessageFromStreamedData(accountID, folderID string, uid im
 	// Parse message body
 	if len(rawBytes) > 0 {
 		bodyText, bodyHTML, hasAttachments := e.parseMessageBody(rawBytes)
+		bodyText = bodyTextOrFromHTML(bodyText, bodyHTML)
 		m.BodyText = bodyText
 		m.HasAttachments = hasAttachments
 

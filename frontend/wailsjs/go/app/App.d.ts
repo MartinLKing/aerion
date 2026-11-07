@@ -355,6 +355,8 @@ export function GetSMIMESignPolicy(arg1:string):Promise<string>;
 
 export function GetSearchCount(arg1:string,arg2:string,arg3:string,arg4:string):Promise<number>;
 
+export function GetSearchCountAllMail(arg1:string,arg2:string):Promise<number>;
+
 export function GetSearchCountUnifiedInbox(arg1:string,arg2:string):Promise<number>;
 
 export function GetShowMessageListCircles():Promise<boolean>;
@@ -552,6 +554,8 @@ export function SaveNamedSignature(arg1:settings.NamedSignature):Promise<setting
 export function SavePendingOAuthTokens(arg1:string):Promise<void>;
 
 export function SaveUIState(arg1:appstate.UIState):Promise<void>;
+
+export function SearchAllMail(arg1:string,arg2:number,arg3:number,arg4:string):Promise<Array<message.ConversationSearchResult>>;
 
 export function SearchContacts(arg1:string,arg2:number):Promise<Array<contact.Contact>>;
 

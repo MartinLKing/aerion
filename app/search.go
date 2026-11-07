@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/hkdb/aerion/internal/email"
+	"github.com/hkdb/aerion/internal/logging"
 	"github.com/hkdb/aerion/internal/message"
 	"github.com/hkdb/aerion/internal/sync"
 )
@@ -35,6 +37,38 @@ func (a *App) SearchUnifiedInbox(query string, offset, limit int, filter string)
 func (a *App) GetSearchCountUnifiedInbox(query, filter string) (int, error) {
 	_, count, err := a.messageStore.SearchConversationsUnifiedInbox(query, 0, 0, filter)
 	return count, err
+}
+
+// SearchAllMail searches every downloaded folder of every account, except Trash and Spam
+func (a *App) SearchAllMail(query string, offset, limit int, filter string) ([]*message.ConversationSearchResult, error) {
+	results, _, err := a.messageStore.SearchConversationsAllMail(query, offset, limit, filter)
+	return results, err
+}
+
+// GetSearchCountAllMail returns the total count of SearchAllMail results
+func (a *App) GetSearchCountAllMail(query, filter string) (int, error) {
+	_, count, err := a.messageStore.SearchConversationsAllMail(query, 0, 0, filter)
+	return count, err
+}
+
+// backfillSearchableBodyText runs once to make the bodies of already-downloaded
+// HTML-only messages searchable. New mail gets this when it is downloaded.
+func (a *App) backfillSearchableBodyText(ctx context.Context) {
+	const doneKey = "html_body_text_backfilled"
+	log := logging.WithComponent("app")
+
+	if done, err := a.settingsStore.Get(doneKey); err != nil || done != "" {
+		return
+	}
+	updated, err := a.messageStore.BackfillBodyTextFromHTML(ctx, email.ExtractPlainTextFromHTML)
+	if err != nil {
+		log.Error().Err(err).Int("updated", updated).Msg("Failed to backfill body text for search")
+		return
+	}
+	if err := a.settingsStore.Set(doneKey, "1"); err != nil {
+		log.Warn().Err(err).Msg("Failed to record body text backfill")
+	}
+	log.Info().Int("updated", updated).Msg("Backfilled body text for search")
 }
 
 // GetFTSIndexStatus returns the indexing status for a specific folder

@@ -674,6 +674,10 @@ export function GetSearchCount(arg1, arg2, arg3, arg4) {
   return window['go']['app']['App']['GetSearchCount'](arg1, arg2, arg3, arg4);
 }
 
+export function GetSearchCountAllMail(arg1, arg2) {
+  return window['go']['app']['App']['GetSearchCountAllMail'](arg1, arg2);
+}
+
 export function GetSearchCountUnifiedInbox(arg1, arg2) {
   return window['go']['app']['App']['GetSearchCountUnifiedInbox'](arg1, arg2);
 }
@@ -1068,6 +1072,10 @@ export function SavePendingOAuthTokens(arg1) {
 
 export function SaveUIState(arg1) {
   return window['go']['app']['App']['SaveUIState'](arg1);
+}
+
+export function SearchAllMail(arg1, arg2, arg3, arg4) {
+  return window['go']['app']['App']['SearchAllMail'](arg1, arg2, arg3, arg4);
 }
 
 export function SearchContacts(arg1, arg2) {

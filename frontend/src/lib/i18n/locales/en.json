@@ -988,6 +988,10 @@
     "shuttingDown": "Shutting down..."
   },
   "search": {
+    "searchAllAccounts": "Search all accounts...",
+    "scopeAllAccounts": "All accounts",
+    "scopeThisFolder": "This folder",
+    "scopeHelp": "Switch between searching all accounts and just this folder",
     "server": "Server",
     "searchOnServer": "Search on Server",
     "serverResults": "Found {count} result(s) on server for \"{query}\"",

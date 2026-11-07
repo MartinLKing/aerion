@@ -19,6 +19,15 @@ import (
 // parseMultipartBody so a permanently-erroring reader can't spin forever.
 const maxConsecutiveNextPartErrors = 20
 
+// bodyTextOrFromHTML gives HTML-only mail a plain text version, because search
+// only indexes body_text. Display and replies still prefer the HTML.
+func bodyTextOrFromHTML(bodyText, bodyHTML string) string {
+	if bodyText != "" || bodyHTML == "" {
+		return bodyText
+	}
+	return email.ExtractPlainTextFromHTML(bodyHTML)
+}
+
 // parseMessageBodyFull parses a raw email and extracts text, HTML, and attachment metadata.
 // Attachments are extracted during the same parsing pass - no re-parsing needed.
 // For inline images, content is also captured (up to maxInlineContentSize) for display.
@@ -34,6 +43,9 @@ func (e *Engine) parseMessageBodyFull(raw []byte, messageID string, timeout time
 
 	go func() {
 		parsed := e.parseMessageBodyInternal(raw, messageID)
+		if !parsed.SMIMEEncrypted && !parsed.PGPEncrypted {
+			parsed.BodyText = bodyTextOrFromHTML(parsed.BodyText, parsed.BodyHTML)
+		}
 		select {
 		case done <- result{parsed}:
 		default:

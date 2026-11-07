@@ -44,6 +44,16 @@ Settings has a new Signatures tab for named signatures that work across all acco
 
 Bindings in `frontend/wailsjs` were committed for the new functions (`App`, `ComposerApp` and `models.ts`). Generated changes that come with a new backend function belong in the commit; the rest of what `wails dev` rewrites does not.
 
+## Feature 4: Unified search across accounts
+
+Searching from the Unified Inbox now covers every downloaded folder of every account, except Trash and Spam. Inside a folder, the search box has a pill that switches between All accounts (the default) and This folder. Results show the account's color dot and the folder name.
+
+- New: `internal/message/search_all.go`, kept separate so upstream merges stay simple. The existing unified inbox search function remains in the backend but the list no longer calls it.
+- A result opens from the folder showing the most of its thread: the inbox, then other folders, then Sent or Drafts. This is chosen from the whole thread, because opening from Sent would hide the thread's inbox messages.
+- HTML-only mail now gets a plain text `body_text` when downloaded, using `email.ExtractPlainTextFromHTML`, because search only indexes that field. Existing mail was backfilled once at startup (the `html_body_text_backfilled` setting), skipping encrypted messages and drafts. Display still prefers the HTML.
+- Search only covers what's downloaded. Sync settings are deliberately unchanged: Inbox, Sent, Drafts and Trash from the last 180 days. Shift+Enter inside a folder still searches that folder on the server.
+- Known limit: when the match is deep in a body, the result preview may not show the searched word.
+
 ## Threads show newest first
 
 Conversations display the newest message at the top and open scrolled to the top. Only the display order changed in `ConversationViewer.svelte`: the underlying list stays oldest-first, because other code (such as replying to the latest message) relies on that.

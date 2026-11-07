@@ -18,7 +18,7 @@
   import { cn } from '$lib/utils'
   import { Button } from '$lib/components/ui/button'
   // @ts-ignore - wailsjs bindings
-  import { GetConversations, GetConversationCount, SyncFolder, ForceSyncFolder, CancelFolderSync, SetMessageListSortOrder, GetUnifiedInboxConversations, GetUnifiedInboxCount, SearchConversations, SearchUnifiedInbox, GetSearchCount, GetSearchCountUnifiedInbox, GetFTSIndexStatus, IsFTSIndexing, Trash, DeletePermanently, EmptyTrash, EmptySpam, Undo, IMAPSearchFolder, FetchServerMessage } from '../../../../wailsjs/go/app/App'
+  import { GetConversations, GetConversationCount, SyncFolder, ForceSyncFolder, CancelFolderSync, SetMessageListSortOrder, GetUnifiedInboxConversations, GetUnifiedInboxCount, SearchConversations, SearchAllMail, GetSearchCount, GetSearchCountAllMail, GetFTSIndexStatus, IsFTSIndexing, Trash, DeletePermanently, EmptyTrash, EmptySpam, Undo, IMAPSearchFolder, FetchServerMessage } from '../../../../wailsjs/go/app/App'
   import { toasts } from '$lib/stores/toast'
   import { _ } from '$lib/i18n'
   import { ConfirmDialog } from '$lib/components/ui/confirm-dialog'
@@ -112,6 +112,8 @@
   // Search state
   let showSearch = $state(false)
   let searchQuery = $state('')
+  // Inside a folder, search can cover everything or just that folder
+  let searchThisFolderOnly = $state(false)
   let searchResults = $state<any[]>([])  // ConversationSearchResult from backend
   let searchTotalCount = $state(0)
   let searchOffset = $state(0)
@@ -355,6 +357,7 @@
     lastClickedIndex = null
     // Clear search state when folder changes
     showSearch = false
+    searchThisFolderOnly = false
     searchQuery = ''
     searchResults = []
     searchTotalCount = 0
@@ -426,6 +429,7 @@
 
   // Check if viewing unified inbox
   const isUnifiedView = $derived(accountId === 'unified' && folderId === 'inbox')
+  const searchesAllMail = $derived(isUnifiedView || !searchThisFolderOnly)
 
   async function loadConversations(customLimit?: number) {
     // For unified view, we don't need accountId/folderId
@@ -629,10 +633,10 @@
       let results: any[] = []
       let count = 0
 
-      if (isUnifiedView) {
+      if (searchesAllMail) {
         ;[results, count] = await Promise.all([
-          SearchUnifiedInbox(query, 0, PAGE_SIZE, filterMode),
-          GetSearchCountUnifiedInbox(query, filterMode),
+          SearchAllMail(query, 0, PAGE_SIZE, filterMode),
+          GetSearchCountAllMail(query, filterMode),
         ])
       } else if (accountId && folderId) {
         ;[results, count] = await Promise.all([
@@ -671,8 +675,8 @@
 
     try {
       let results: any[] = []
-      if (isUnifiedView) {
-        results = await SearchUnifiedInbox(query, newOffset, PAGE_SIZE, filterMode)
+      if (searchesAllMail) {
+        results = await SearchAllMail(query, newOffset, PAGE_SIZE, filterMode)
       } else if (accountId && folderId) {
         results = await SearchConversations(accountId, folderId, query, newOffset, PAGE_SIZE, filterMode)
       }
@@ -687,6 +691,15 @@
     } finally {
       isSearching = false
     }
+  }
+
+  // Switch between searching everything and just this folder
+  function toggleSearchScope() {
+    searchThisFolderOnly = !searchThisFolderOnly
+    serverSearchMode = false
+    selectedThreadId = null
+    if (searchQuery.trim()) performSearch()
+    searchInputRef?.focus()
   }
 
   // Clear search and return to normal view
@@ -1443,12 +1456,21 @@
           <input
             bind:this={searchInputRef}
             type="text"
-            placeholder={$_('messageList.searchMessages')}
+            placeholder={searchesAllMail ? $_('search.searchAllAccounts') : $_('messageList.searchMessages')}
             class="bg-transparent border-none outline-none text-sm py-1.5 w-full min-w-[200px]"
             bind:value={searchQuery}
             oninput={handleSearchInput}
             onkeydown={handleSearchKeydown}
           />
+          {#if !isUnifiedView && !serverSearchMode}
+            <button
+              onclick={toggleSearchScope}
+              class="px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap bg-primary/20 text-primary rounded-full flex-shrink-0 hover:bg-primary/30 transition-colors"
+              title={$_('search.scopeHelp')}
+            >
+              {searchThisFolderOnly ? $_('search.scopeThisFolder') : $_('search.scopeAllAccounts')}
+            </button>
+          {/if}
           {#if serverSearchMode}
             <button
               onclick={() => { serverSearchMode = false }}
@@ -1773,13 +1795,13 @@
             density={getMessageListDensity()}
             selected={selectedThreadId === result.threadId}
             checked={checkedThreadIds.has(result.threadId)}
-            accountId={isUnifiedView ? resultAccountId : accountId!}
-            folderId={isUnifiedView ? resultFolderId : folderId!}
-            {folderType}
+            accountId={searchesAllMail ? resultAccountId : accountId!}
+            folderId={searchesAllMail ? resultFolderId : folderId!}
+            folderType={searchesAllMail ? (result.folderType || folderType) : folderType}
             {selectedMessageIds}
             selectedIsStarred={!selectedHasUnstarred}
             selectedIsRead={!selectedHasUnread}
-            showAccountIndicator={isUnifiedView}
+            showAccountIndicator={searchesAllMail}
             accountColor={resultAccountColor}
             accountName={resultAccountName}
             highlightedSubject={result.highlightedSubject}

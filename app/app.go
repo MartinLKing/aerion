@@ -833,6 +833,9 @@ func (a *App) Startup(ctx context.Context) {
 	go func() {
 		defer recoverPanic("app", "FTS indexing")
 		time.Sleep(5 * time.Second)
+		// Runs before indexing, not alongside it, so the two never write the same
+		// index rows at once.
+		a.backfillSearchableBodyText(ctx)
 		log.Info().Msg("Starting background FTS indexing")
 		wailsRuntime.EventsEmit(ctx, "fts:indexing", map[string]interface{}{
 			"status": "started",
