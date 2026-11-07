@@ -386,6 +386,12 @@ func (a *App) syncFlagsToIMAP(messages []*message.Message, folderID, flagType st
 
 // MoveToFolder moves messages to a specified folder
 func (a *App) MoveToFolder(messageIDs []string, destFolderID string) error {
+	return a.moveToFolder(messageIDs, destFolderID, true)
+}
+
+// moveToFolder does the move. undoable is false for background moves by filter
+// rules, which must not take over the user's Undo.
+func (a *App) moveToFolder(messageIDs []string, destFolderID string, undoable bool) error {
 	log := logging.WithComponent("app")
 
 	if len(messageIDs) == 0 {
@@ -505,6 +511,10 @@ func (a *App) MoveToFolder(messageIDs []string, destFolderID string) error {
 			}
 		}
 	}()
+
+	if !undoable {
+		return nil
+	}
 
 	// Create undo command for each source folder
 	for sourceFolderID, msgs := range byFolder {

@@ -54,6 +54,19 @@ Searching from the Unified Inbox now covers every downloaded folder of every acc
 - Search only covers what's downloaded. Sync settings are deliberately unchanged: Inbox, Sent, Drafts and Trash from the last 180 days. Shift+Enter inside a folder still searches that folder on the server.
 - Known limit: when the match is deep in a body, the result preview may not show the searched word.
 
+## Feature 5: Filter rules
+
+Settings has a new Rules tab. A rule matches on sender (contains, equals, in domain) and/or subject (contains, equals), then archives or moves the message and/or marks it read. Rules can cover all accounts or one, and moving to a folder needs a specific account. The Settings dialog was widened to fit nine tabs.
+
+- New mail: rules run on newly arrived Inbox messages after each sync, before any desktop notification, and the first matching rule wins. There's no notification for mail the rules dealt with.
+- Existing mail: the play button runs one rule on downloaded Inbox mail after showing a count. Mail that's only on the server isn't touched.
+- Only runs while Aerion is running. Mail arriving while it's closed is filtered at the next sync.
+- Which mail is new: each Inbox's highest checked UID and UIDVALIDITY are kept in the settings table. The first check only records the position, so adding a rule or account doesn't file existing mail.
+- The last 2,000 filed Message-IDs are remembered, so a message moved back to the Inbox isn't filed again.
+- Rule moves stay off the Undo list, using `moveToFolder(..., undoable)` in `actions.go`. Mark read and move together waits for the server to confirm the read flag before moving.
+- A rule files single messages, so a thread can end up split between folders.
+- New: `internal/rules/`, `internal/settings/filter_rules.go`, `internal/message/rule_candidates.go`, `app/rules.go`, `RulesTab.svelte`. No database migration; labels are English only.
+
 ## Threads show newest first
 
 Conversations display the newest message at the top and open scrolled to the top. Only the display order changed in `ConversationViewer.svelte`: the underlying list stays oldest-first, because other code (such as replying to the latest message) relies on that.

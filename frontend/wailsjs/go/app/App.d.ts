@@ -11,6 +11,7 @@ import {folder} from '../models';
 import {contact} from '../models';
 import {context} from '../models';
 import {smtp} from '../models';
+import {rules} from '../models';
 import {imap} from '../models';
 import {settings} from '../models';
 import {pgp} from '../models';
@@ -157,6 +158,8 @@ export function Contacts_UpdateContact(arg1:string,arg2:v1.ContactPatch):Promise
 
 export function CopyToFolder(arg1:Array<string>,arg2:string):Promise<void>;
 
+export function CountFilterRuleMatches(arg1:string):Promise<number>;
+
 export function CreateIdentity(arg1:string,arg2:account.IdentityConfig):Promise<account.Identity>;
 
 export function DeleteContact(arg1:string):Promise<void>;
@@ -164,6 +167,8 @@ export function DeleteContact(arg1:string):Promise<void>;
 export function DeleteContactSource(arg1:string):Promise<void>;
 
 export function DeleteDraft(arg1:string):Promise<void>;
+
+export function DeleteFilterRule(arg1:string):Promise<void>;
 
 export function DeleteIdentity(arg1:string):Promise<void>;
 
@@ -276,6 +281,8 @@ export function GetDraft(arg1:string):Promise<smtp.ComposeMessage>;
 export function GetFTSIndexStatus(arg1:string):Promise<message.FTSIndexStatus>;
 
 export function GetFTSIndexStatusAll():Promise<Record<string, message.FTSIndexStatus>>;
+
+export function GetFilterRules():Promise<Array<rules.Rule>>;
 
 export function GetFolderTree(arg1:string):Promise<Array<folder.FolderTree>>;
 
@@ -479,6 +486,8 @@ export function MarkAsUnread(arg1:Array<string>):Promise<void>;
 
 export function MarkWholeFolder(arg1:string,arg2:boolean):Promise<void>;
 
+export function MoveFilterRule(arg1:string,arg2:number):Promise<void>;
+
 export function MoveLocalMessages(arg1:Array<string>,arg2:string):Promise<void>;
 
 export function MoveMessagesToFolder(arg1:Array<string>,arg2:string):Promise<void>;
@@ -539,6 +548,8 @@ export function RemoveTrustedCertificate(arg1:string):Promise<void>;
 
 export function ReorderAccounts(arg1:Array<string>):Promise<void>;
 
+export function RunFilterRule(arg1:string):Promise<number>;
+
 export function SaveAllAttachments(arg1:string):Promise<string>;
 
 export function SaveAllEncryptedAttachments(arg1:string):Promise<string>;
@@ -548,6 +559,8 @@ export function SaveAttachmentAs(arg1:string):Promise<string>;
 export function SaveDraft(arg1:string,arg2:smtp.ComposeMessage,arg3:string):Promise<app.DraftResult>;
 
 export function SaveEncryptedAttachmentAs(arg1:string,arg2:string):Promise<string>;
+
+export function SaveFilterRule(arg1:rules.Rule):Promise<rules.Rule>;
 
 export function SaveNamedSignature(arg1:settings.NamedSignature):Promise<settings.NamedSignature>;
 

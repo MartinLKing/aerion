@@ -278,6 +278,10 @@ export function CopyToFolder(arg1, arg2) {
   return window['go']['app']['App']['CopyToFolder'](arg1, arg2);
 }
 
+export function CountFilterRuleMatches(arg1) {
+  return window['go']['app']['App']['CountFilterRuleMatches'](arg1);
+}
+
 export function CreateIdentity(arg1, arg2) {
   return window['go']['app']['App']['CreateIdentity'](arg1, arg2);
 }
@@ -292,6 +296,10 @@ export function DeleteContactSource(arg1) {
 
 export function DeleteDraft(arg1) {
   return window['go']['app']['App']['DeleteDraft'](arg1);
+}
+
+export function DeleteFilterRule(arg1) {
+  return window['go']['app']['App']['DeleteFilterRule'](arg1);
 }
 
 export function DeleteIdentity(arg1) {
@@ -516,6 +524,10 @@ export function GetFTSIndexStatus(arg1) {
 
 export function GetFTSIndexStatusAll() {
   return window['go']['app']['App']['GetFTSIndexStatusAll']();
+}
+
+export function GetFilterRules() {
+  return window['go']['app']['App']['GetFilterRules']();
 }
 
 export function GetFolderTree(arg1) {
@@ -922,6 +934,10 @@ export function MarkWholeFolder(arg1, arg2) {
   return window['go']['app']['App']['MarkWholeFolder'](arg1, arg2);
 }
 
+export function MoveFilterRule(arg1, arg2) {
+  return window['go']['app']['App']['MoveFilterRule'](arg1, arg2);
+}
+
 export function MoveLocalMessages(arg1, arg2) {
   return window['go']['app']['App']['MoveLocalMessages'](arg1, arg2);
 }
@@ -1042,6 +1058,10 @@ export function ReorderAccounts(arg1) {
   return window['go']['app']['App']['ReorderAccounts'](arg1);
 }
 
+export function RunFilterRule(arg1) {
+  return window['go']['app']['App']['RunFilterRule'](arg1);
+}
+
 export function SaveAllAttachments(arg1) {
   return window['go']['app']['App']['SaveAllAttachments'](arg1);
 }
@@ -1060,6 +1080,10 @@ export function SaveDraft(arg1, arg2, arg3) {
 
 export function SaveEncryptedAttachmentAs(arg1, arg2) {
   return window['go']['app']['App']['SaveEncryptedAttachmentAs'](arg1, arg2);
+}
+
+export function SaveFilterRule(arg1) {
+  return window['go']['app']['App']['SaveFilterRule'](arg1);
 }
 
 export function SaveNamedSignature(arg1) {

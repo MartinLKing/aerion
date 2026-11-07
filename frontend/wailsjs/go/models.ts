@@ -2408,6 +2408,41 @@ export namespace pgp {
 
 }
 
+export namespace rules {
+	
+	export class Rule {
+	    id: string;
+	    enabled: boolean;
+	    accountId: string;
+	    senderMode: string;
+	    senderValue: string;
+	    subjectMode: string;
+	    subjectValue: string;
+	    archive: boolean;
+	    moveToFolderId: string;
+	    markRead: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Rule(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.enabled = source["enabled"];
+	        this.accountId = source["accountId"];
+	        this.senderMode = source["senderMode"];
+	        this.senderValue = source["senderValue"];
+	        this.subjectMode = source["subjectMode"];
+	        this.subjectValue = source["subjectValue"];
+	        this.archive = source["archive"];
+	        this.moveToFolderId = source["moveToFolderId"];
+	        this.markRead = source["markRead"];
+	    }
+	}
+
+}
+
 export namespace settings {
 	
 	export class AllowlistEntry {

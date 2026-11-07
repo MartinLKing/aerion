@@ -16,6 +16,7 @@
   import GeneralTab from './GeneralTab.svelte'
   import ComposerTab from './ComposerTab.svelte'
   import SignaturesTab from './SignaturesTab.svelte'
+  import RulesTab from './RulesTab.svelte'
   import ImagesTab from './ImagesTab.svelte'
   import AccountsTab from './AccountsTab.svelte'
   import ContactsTab from './ContactsTab.svelte'
@@ -270,7 +271,7 @@
 </script>
 
 <Dialog.Root bind:open onOpenChange={handleOpenChange}>
-  <Dialog.Content class="max-w-3xl" preventCloseAutoFocus onInteractOutside={(e) => e.preventDefault()}>
+  <Dialog.Content class="max-w-5xl" preventCloseAutoFocus onInteractOutside={(e) => e.preventDefault()}>
     <Dialog.Header>
       <Dialog.Title>{$_('settings.title')}</Dialog.Title>
       <Dialog.Description>
@@ -284,7 +285,7 @@
       </div>
     {:else}
       <Tabs.Root bind:value={activeTab} class="w-full">
-        <Tabs.List class="grid w-full grid-cols-8">
+        <Tabs.List class="grid w-full grid-cols-9">
           <Tabs.Trigger value="general" class="flex items-center gap-2">
             <span class="inline-flex w-4 h-4 items-center justify-center shrink-0"><Icon icon="lucide:settings-2" width="16" height="16" /></span>
             {$_('settings.general')}
@@ -296,6 +297,10 @@
           <Tabs.Trigger value="signatures" class="flex items-center gap-2">
             <span class="inline-flex w-4 h-4 items-center justify-center shrink-0"><Icon icon="mdi:signature-text" width="16" height="16" /></span>
             {$_('settings.signatures')}
+          </Tabs.Trigger>
+          <Tabs.Trigger value="rules" class="flex items-center gap-2">
+            <span class="inline-flex w-4 h-4 items-center justify-center shrink-0"><Icon icon="mdi:filter-outline" width="16" height="16" /></span>
+            {$_('settings.rules')}
           </Tabs.Trigger>
           <Tabs.Trigger value="images" class="flex items-center gap-2">
             <span class="inline-flex w-4 h-4 items-center justify-center shrink-0"><Icon icon="lucide:image" width="16" height="16" /></span>
@@ -369,6 +374,10 @@
 
           <Tabs.Content value="signatures" class="mt-0">
             <SignaturesTab />
+          </Tabs.Content>
+
+          <Tabs.Content value="rules" class="mt-0">
+            <RulesTab />
           </Tabs.Content>
 
           <Tabs.Content value="images" class="mt-0">

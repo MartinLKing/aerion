@@ -42,6 +42,9 @@ func (a *App) initBackgroundSync(ctx context.Context) {
 			})
 			return
 		}
+		// Catches anything handleNewMailNotification didn't see, such as new mail
+		// offset by deletions so the Inbox total didn't rise
+		a.applyFilterRulesAfterSync(accountID, folderID)
 		wailsRuntime.EventsEmit(a.ctx, "folder:synced", map[string]interface{}{
 			"accountId": accountID,
 			"folderId":  folderID,
@@ -261,6 +264,12 @@ func (a *App) handleIdleNewMail(event imap.MailEvent) {
 			})
 		}
 		return
+	}
+
+	// With a count, handleNewMailNotification below runs the rules first, so it
+	// knows how many messages are left to notify about
+	if newMailInfo == nil || newMailInfo.Count == 0 {
+		a.applyFilterRulesToNewMail(event.AccountID)
 	}
 
 	// Fetch bodies in background (same as SyncFolder does)
@@ -564,6 +573,13 @@ func (a *App) handleNewMailNotification(info sync.NewMailInfo) {
 		Str("account", info.AccountName).
 		Int("count", info.Count).
 		Msg("New mail notification")
+
+	// File mail first, and stay quiet about whatever the rules dealt with
+	acted := a.applyFilterRulesToNewMail(info.AccountID)
+	if acted >= info.Count {
+		return
+	}
+	info.Count -= acted
 
 	// Get the most recent conversation for the notification
 	var subject, fromName, fromEmail, threadID string
