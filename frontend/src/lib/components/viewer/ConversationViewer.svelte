@@ -516,10 +516,10 @@
       error = $_('viewer.failedToLoad')
     } finally {
       loading = false
-      // Scroll to bottom to show the latest message
+      // Scroll to top to show the latest message
       await tick()
       if (contentContainerRef) {
-        contentContainerRef.scrollTop = contentContainerRef.scrollHeight
+        contentContainerRef.scrollTop = 0
       }
     }
   }
@@ -1126,7 +1126,9 @@
   const visibleMessages = $derived(
     inFocusMode && focusModeKind === 'message' && focusedMessageIdInFocus
       ? (conversation?.messages?.filter(m => m.id === focusedMessageIdInFocus) ?? [])
-      : (conversation?.messages ?? [])
+      // Display newest first. conversation.messages stays oldest-first, because
+      // other code relies on the last entry being the newest message.
+      : [...(conversation?.messages ?? [])].reverse()
   )
 
   // Reference to the scrollable content area

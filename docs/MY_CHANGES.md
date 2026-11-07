@@ -30,3 +30,7 @@ Every message in a thread, collapsed or expanded, shows its attachments as chips
 - Inline images (signature logos, embedded pictures) get no chip, since they show in the message body.
 - Known quirk: Save all still includes inline images, because it uses the existing backend function.
 - Encrypted mail only shows its attachments after the message is opened and decrypted.
+
+## Threads show newest first
+
+Conversations display the newest message at the top and open scrolled to the top. Only the display order changed in `ConversationViewer.svelte`: the underlying list stays oldest-first, because other code (such as replying to the latest message) relies on that.
