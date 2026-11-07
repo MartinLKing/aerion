@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from '@iconify/svelte'
   import type { Editor } from '@tiptap/core'
+  import type { Snippet } from 'svelte'
   import { _ } from '$lib/i18n'
 
   interface Props {
@@ -8,9 +9,11 @@
     isPlainTextMode?: boolean
     onTogglePlainText?: () => void
     onInsertImage?: () => void
+    /** Extra controls shown before the plain text toggle */
+    trailing?: Snippet
   }
 
-  let { editor, isPlainTextMode = false, onTogglePlainText, onInsertImage }: Props = $props()
+  let { editor, isPlainTextMode = false, onTogglePlainText, onInsertImage, trailing }: Props = $props()
 
   // Hint mode state (Alt+T shows numbered hints on buttons)
   let hintMode = $state(false)
@@ -531,6 +534,10 @@
 
   <!-- Spacer -->
   <div class="flex-1"></div>
+
+  {#if trailing}
+    {@render trailing()}
+  {/if}
 
   <!-- Plain text toggle -->
   <div class="relative">

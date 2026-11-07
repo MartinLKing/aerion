@@ -4,6 +4,7 @@
   import { Label } from '$lib/components/ui/label'
   import Switch from '$lib/components/ui/switch/Switch.svelte'
   import AccountAddressDefaults from './AccountAddressDefaults.svelte'
+  import TranslationSettings from './TranslationSettings.svelte'
   import { _ } from '$lib/i18n'
   import { supportedLocales } from '$lib/i18n'
   import { SPELLCHECK_DICTS, DICT_NAMES } from '$lib/spellcheck/locales'
@@ -286,4 +287,9 @@
     help={$_('settings.defaultBccHelp')}
     placeholder="crm@example.com"
   />
+
+  <!-- Divider -->
+  <div class="border-t border-border"></div>
+
+  <TranslationSettings />
 </div>

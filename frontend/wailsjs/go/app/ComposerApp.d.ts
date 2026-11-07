@@ -61,6 +61,8 @@ export function GetSystemTheme():Promise<string>;
 
 export function GetThemeMode():Promise<string>;
 
+export function GetTranslationSettings():Promise<app.TranslationSettings>;
+
 export function HasPGPKey(arg1:string):Promise<boolean>;
 
 export function HasSMIMECertificate(arg1:string):Promise<boolean>;
@@ -104,3 +106,5 @@ export function SetSpellcheckActiveLanguage(arg1:string):Promise<void>;
 export function Shutdown(arg1:context.Context):Promise<void>;
 
 export function Startup(arg1:context.Context):Promise<void>;
+
+export function TranslateHTML(arg1:string,arg2:string):Promise<string>;

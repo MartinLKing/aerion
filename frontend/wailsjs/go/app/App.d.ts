@@ -19,6 +19,7 @@ import {smime} from '../models';
 import {appstate} from '../models';
 import {sync} from '../models';
 import {draft} from '../models';
+import {translate} from '../models';
 
 export function AcceptCertificate(arg1:string,arg2:certificate.CertificateInfo,arg3:boolean):Promise<void>;
 
@@ -396,6 +397,8 @@ export function GetTermsAccepted():Promise<boolean>;
 
 export function GetThemeMode():Promise<string>;
 
+export function GetTranslationSettings():Promise<app.TranslationSettings>;
+
 export function GetTrustedCertificates(arg1:Array<string>):Promise<Array<certificate.CertificateInfo>>;
 
 export function GetUIState():Promise<appstate.UIState>;
@@ -546,6 +549,8 @@ export function RemovePGPKeyServer(arg1:number):Promise<void>;
 
 export function RemoveSpellcheckCustomWord(arg1:string):Promise<void>;
 
+export function RemoveTranslationKey():Promise<void>;
+
 export function RemoveTrustedCertificate(arg1:string):Promise<void>;
 
 export function ReorderAccounts(arg1:Array<string>):Promise<void>;
@@ -567,6 +572,8 @@ export function SaveFilterRule(arg1:rules.Rule):Promise<rules.Rule>;
 export function SaveNamedSignature(arg1:settings.NamedSignature):Promise<settings.NamedSignature>;
 
 export function SavePendingOAuthTokens(arg1:string):Promise<void>;
+
+export function SaveTranslationSettings(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function SaveUIState(arg1:appstate.UIState):Promise<void>;
 
@@ -705,6 +712,14 @@ export function TestConnection(arg1:account.AccountConfig):Promise<app.Connectio
 export function TestOAuthConnection(arg1:string):Promise<void>;
 
 export function TestSMTPConnection(arg1:string,arg2:number,arg3:string,arg4:string,arg5:string,arg6:string):Promise<void>;
+
+export function TestTranslation():Promise<string>;
+
+export function TranslateHTML(arg1:string,arg2:string):Promise<string>;
+
+export function TranslateMessage(arg1:string,arg2:string):Promise<app.TranslatedMessage>;
+
+export function TranslateText(arg1:string,arg2:string):Promise<translate.Result>;
 
 export function Trash(arg1:Array<string>):Promise<boolean>;
 

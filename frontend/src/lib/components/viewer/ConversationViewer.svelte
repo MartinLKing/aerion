@@ -2,7 +2,10 @@
   import { onMount, onDestroy, tick } from 'svelte'
   import Icon from '@iconify/svelte'
   // @ts-ignore - wailsjs bindings
-  import { GetConversation, GetReadReceiptResponsePolicy, SendReadReceipt, IgnoreReadReceipt, GetMarkAsReadDelay, GetMessageSource, ProcessSMIMEMessage, ProcessPGPMessage, FetchMessageBody } from '../../../../wailsjs/go/app/App'
+  import { GetConversation, GetReadReceiptResponsePolicy, SendReadReceipt, IgnoreReadReceipt, GetMarkAsReadDelay, GetMessageSource, ProcessSMIMEMessage, ProcessPGPMessage, FetchMessageBody, GetTranslationSettings, TranslateMessage } from '../../../../wailsjs/go/app/App'
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
+  import { detectedLanguageName, translationLanguageName } from '$lib/translation/languages'
+  import { locale } from '$lib/i18n'
   // @ts-ignore - wailsjs bindings
   import { MarkAsRead, MarkAsUnread, Star, Unstar, Archive, Trash, MarkAsSpam, MarkAsNotSpam, DeletePermanently, Undo } from '../../../../wailsjs/go/app/App'
   // @ts-ignore - wailsjs path
@@ -135,6 +138,52 @@
 
   // Read receipt policy and tracking
   let readReceiptPolicy = $state<'never' | 'ask' | 'always'>('ask')
+
+  // Translation: settings are re-read for each conversation, so a key added in
+  // Settings applies without a restart. Translations are kept until the app
+  // closes, so switching back and forth doesn't use more of the allowance.
+  let translationLanguage = $state('')
+  let translationLanguages = $state<string[]>([])
+  type MessageTranslation = { html: string; text: string; asText: boolean; detected: string; to: string }
+  let translations = $state<Record<string, MessageTranslation>>({})
+  let showingTranslation = $state<Set<string>>(new Set())
+  let translatingIds = $state<Set<string>>(new Set())
+
+  async function refreshTranslationSettings() {
+    try {
+      const s = await GetTranslationSettings()
+      translationLanguage = s.configured ? s.language : ''
+      translationLanguages = s.languages ?? []
+    } catch {
+      translationLanguage = ''
+    }
+  }
+
+  function canTranslate(msg: messageModels.Message): boolean {
+    return !!translationLanguage && !msg.hasSMIME && !msg.hasPGP && !msg.smimeEncrypted && !msg.pgpEncrypted
+  }
+
+  async function translateMessage(msgId: string, to: string) {
+    const cached = translations[msgId]
+    if (cached && cached.to === to) {
+      showingTranslation = new Set([...showingTranslation, msgId])
+      return
+    }
+    translatingIds = new Set([...translatingIds, msgId])
+    try {
+      const result = await TranslateMessage(msgId, to)
+      translations[msgId] = { html: result.html, text: result.text, asText: result.asText, detected: result.detectedLanguage, to }
+      showingTranslation = new Set([...showingTranslation, msgId])
+    } catch (err) {
+      toasts.error(`${$_('translation.failed')}: ${err}`)
+    } finally {
+      translatingIds = new Set([...translatingIds].filter(id => id !== msgId))
+    }
+  }
+
+  function showOriginal(msgId: string) {
+    showingTranslation = new Set([...showingTranslation].filter(id => id !== msgId))
+  }
   let handledReadReceipts = $state<Set<string>>(new Set()) // Track locally handled receipts
   let sendingReadReceipt = $state<Set<string>>(new Set()) // Track in-flight sends
 
@@ -470,6 +519,7 @@
 
     loading = true
     error = null
+    refreshTranslationSettings()
 
     try {
       const result = await GetConversation(tid, fid)
@@ -1787,6 +1837,51 @@
                         </div>
                       {/if}
 
+                      <!-- Translation controls (only when set up, never for encrypted or signed mail) -->
+                      {#if canTranslate(msg) && msg.bodyFetched !== false}
+                        {@const translation = translations[msg.id]}
+                        {@const showing = showingTranslation.has(msg.id) && !!translation}
+                        <div class="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+                          <Icon icon="mdi:translate" class="w-4 h-4 flex-shrink-0" />
+                          {#if translatingIds.has(msg.id)}
+                            <span class="flex items-center gap-1">
+                              <Icon icon="mdi:loading" class="w-3 h-3 animate-spin" />
+                              {$_('translation.translating')}
+                            </span>
+                          {:else if showing}
+                            <span>
+                              {translation.detected
+                                ? $_('translation.translatedFromTo', { values: { from: detectedLanguageName(translation.detected, $locale ?? 'en'), to: translationLanguageName(translation.to) } })
+                                : $_('translation.translatedTo', { values: { to: translationLanguageName(translation.to) } })}
+                              {#if translation.asText}
+                                · {$_('translation.asPlainText')}
+                              {/if}
+                            </span>
+                            <button class="text-primary hover:underline" onclick={() => showOriginal(msg.id)}>
+                              {$_('translation.showOriginal')}
+                            </button>
+                          {:else}
+                            <button class="text-primary hover:underline" onclick={() => translateMessage(msg.id, translationLanguage)}>
+                              {$_('translation.translateTo', { values: { language: translationLanguageName(translationLanguage) } })}
+                            </button>
+                          {/if}
+                          {#if !translatingIds.has(msg.id) && translationLanguages.length > 1}
+                            <DropdownMenu.Root>
+                              <DropdownMenu.Trigger class="p-0.5 rounded hover:bg-muted" title={$_('translation.otherLanguage')}>
+                                <Icon icon="mdi:chevron-down" class="w-4 h-4" />
+                              </DropdownMenu.Trigger>
+                              <DropdownMenu.Content align="start">
+                                {#each translationLanguages as code (code)}
+                                  <DropdownMenu.Item onSelect={() => translateMessage(msg.id, code)}>
+                                    {translationLanguageName(code)}
+                                  </DropdownMenu.Item>
+                                {/each}
+                              </DropdownMenu.Content>
+                            </DropdownMenu.Root>
+                          {/if}
+                        </div>
+                      {/if}
+
                       <!-- Body (use on-view result for S/MIME or PGP messages) -->
                       <div class="mb-4">
                         {#if (msg as any).bodyFetched === false && !msg.bodyHtml && !msg.bodyText}
@@ -1803,8 +1898,9 @@
                             bind:this={emailBodyRefs[msg.id]}
                             messageId={msg.id}
                             accountId={msg.accountId}
-                            bodyHtml={msg.hasPGP && pgpResults[msg.id] ? pgpResults[msg.id].bodyHtml : msg.hasSMIME && smimeResults[msg.id] ? smimeResults[msg.id].bodyHtml : msg.bodyHtml}
-                            bodyText={msg.hasPGP && pgpResults[msg.id] ? pgpResults[msg.id].bodyText : msg.hasSMIME && smimeResults[msg.id] ? smimeResults[msg.id].bodyText : msg.bodyText}
+                            bodyHtml={showingTranslation.has(msg.id) && translations[msg.id] ? translations[msg.id].html : msg.hasPGP && pgpResults[msg.id] ? pgpResults[msg.id].bodyHtml : msg.hasSMIME && smimeResults[msg.id] ? smimeResults[msg.id].bodyHtml : msg.bodyHtml}
+                            bodyText={showingTranslation.has(msg.id) && translations[msg.id] ? translations[msg.id].text : msg.hasPGP && pgpResults[msg.id] ? pgpResults[msg.id].bodyText : msg.hasSMIME && smimeResults[msg.id] ? smimeResults[msg.id].bodyText : msg.bodyText}
+                            translateTo={canTranslate(msg) ? translationLanguage : ''}
                             fromEmail={msg.fromEmail}
                             onCompose={onComposeToAddress}
                             onImagesLoaded={() => messagesWithImagesLoaded.add(msg.id)}

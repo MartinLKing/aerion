@@ -38,6 +38,12 @@ export interface ComposerApi {
   /** Remember the chosen spell-check language */
   setSpellcheckActiveLanguage: (code: string) => Promise<void>
 
+  /** Whether translation is set up, its default language and the offered languages */
+  getTranslationSettings: () => Promise<app.TranslationSettings>
+
+  /** Translate draft HTML; the result is sanitized */
+  translateHTML: (html: string, to: string) => Promise<string>
+
   /** Get the account's default address list for a kind ('bcc' | 'replyto'); "" when disabled */
   getDefaultAddress: (kind: string, accountId: string) => Promise<string>
 
@@ -170,6 +176,16 @@ export function createMainWindowApi(): ComposerApi {
     setSpellcheckActiveLanguage: async (code: string) => {
       const { SetSpellcheckActiveLanguage } = await import('../../wailsjs/go/app/App.js')
       return SetSpellcheckActiveLanguage(code)
+    },
+
+    getTranslationSettings: async () => {
+      const { GetTranslationSettings } = await import('../../wailsjs/go/app/App.js')
+      return GetTranslationSettings()
+    },
+
+    translateHTML: async (html: string, to: string) => {
+      const { TranslateHTML } = await import('../../wailsjs/go/app/App.js')
+      return TranslateHTML(html, to)
     },
 
     saveDraft: async (accountId: string, message: smtp.ComposeMessage, draftId: string) => {
@@ -344,6 +360,16 @@ export function createComposerWindowApi(_accountId: string): ComposerApi {
     setSpellcheckActiveLanguage: async (code: string) => {
       const { SetSpellcheckActiveLanguage } = await import('../../wailsjs/go/app/ComposerApp.js')
       return SetSpellcheckActiveLanguage(code)
+    },
+
+    getTranslationSettings: async () => {
+      const { GetTranslationSettings } = await import('../../wailsjs/go/app/ComposerApp.js')
+      return GetTranslationSettings()
+    },
+
+    translateHTML: async (html: string, to: string) => {
+      const { TranslateHTML } = await import('../../wailsjs/go/app/ComposerApp.js')
+      return TranslateHTML(html, to)
     },
 
     saveDraft: async (accountId: string, message: smtp.ComposeMessage, draftId: string) => {

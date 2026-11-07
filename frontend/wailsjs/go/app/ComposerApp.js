@@ -102,6 +102,10 @@ export function GetThemeMode() {
   return window['go']['app']['ComposerApp']['GetThemeMode']();
 }
 
+export function GetTranslationSettings() {
+  return window['go']['app']['ComposerApp']['GetTranslationSettings']();
+}
+
 export function HasPGPKey(arg1) {
   return window['go']['app']['ComposerApp']['HasPGPKey'](arg1);
 }
@@ -188,4 +192,8 @@ export function Shutdown(arg1) {
 
 export function Startup(arg1) {
   return window['go']['app']['ComposerApp']['Startup'](arg1);
+}
+
+export function TranslateHTML(arg1, arg2) {
+  return window['go']['app']['ComposerApp']['TranslateHTML'](arg1, arg2);
 }

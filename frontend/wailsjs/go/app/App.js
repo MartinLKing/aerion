@@ -754,6 +754,10 @@ export function GetThemeMode() {
   return window['go']['app']['App']['GetThemeMode']();
 }
 
+export function GetTranslationSettings() {
+  return window['go']['app']['App']['GetTranslationSettings']();
+}
+
 export function GetTrustedCertificates(arg1) {
   return window['go']['app']['App']['GetTrustedCertificates'](arg1);
 }
@@ -1054,6 +1058,10 @@ export function RemoveSpellcheckCustomWord(arg1) {
   return window['go']['app']['App']['RemoveSpellcheckCustomWord'](arg1);
 }
 
+export function RemoveTranslationKey() {
+  return window['go']['app']['App']['RemoveTranslationKey']();
+}
+
 export function RemoveTrustedCertificate(arg1) {
   return window['go']['app']['App']['RemoveTrustedCertificate'](arg1);
 }
@@ -1096,6 +1104,10 @@ export function SaveNamedSignature(arg1) {
 
 export function SavePendingOAuthTokens(arg1) {
   return window['go']['app']['App']['SavePendingOAuthTokens'](arg1);
+}
+
+export function SaveTranslationSettings(arg1, arg2, arg3) {
+  return window['go']['app']['App']['SaveTranslationSettings'](arg1, arg2, arg3);
 }
 
 export function SaveUIState(arg1) {
@@ -1372,6 +1384,22 @@ export function TestOAuthConnection(arg1) {
 
 export function TestSMTPConnection(arg1, arg2, arg3, arg4, arg5, arg6) {
   return window['go']['app']['App']['TestSMTPConnection'](arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
+export function TestTranslation() {
+  return window['go']['app']['App']['TestTranslation']();
+}
+
+export function TranslateHTML(arg1, arg2) {
+  return window['go']['app']['App']['TranslateHTML'](arg1, arg2);
+}
+
+export function TranslateMessage(arg1, arg2) {
+  return window['go']['app']['App']['TranslateMessage'](arg1, arg2);
+}
+
+export function TranslateText(arg1, arg2) {
+  return window['go']['app']['App']['TranslateText'](arg1, arg2);
 }
 
 export function Trash(arg1) {

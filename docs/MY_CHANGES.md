@@ -67,6 +67,18 @@ Settings has a new Rules tab. A rule matches on sender (contains, equals, in dom
 - A rule files single messages, so a thread can end up split between folders.
 - New: `internal/rules/`, `internal/settings/filter_rules.go`, `internal/message/rule_candidates.go`, `app/rules.go`, `RulesTab.svelte`. No database migration; labels are English only.
 
+## Feature 6: Translation (Azure Translator)
+
+Emails, selected text and drafts can be translated with Azure Translator. Nothing is sent until you click.
+
+- Settings → Composer → Translation: the Azure key (saved in the credential store, Windows Credential Manager), the region from Azure's Keys and Endpoint page, the default language (English, French, German, Spanish), and Test.
+- Reading mail: "Translate to ..." above each message switches it in place, with formatting kept, and "Show original" switches back. The ▾ picks another language. Translations are kept until the app closes. Right-clicking selected text offers Translate, shown in a small panel with a copy button.
+- Writing: Translate in the composer toolbar (rich text only) translates only the user's own text, leaving the signature and quoted text alone. Ctrl+Z undoes it.
+- Encrypted and signed mail is never translated. Translated HTML goes through the email sanitizer before it's shown or inserted.
+- Long emails: Azure takes 50,000 characters per request, so HTML over that is translated as plain text in pieces. The free tier is also paced at about 33,000 characters a minute, so very long emails can get "too many translations in a short time". Accepted as is for occasional use.
+- DeepL was dropped: its free Developer plan forbids personal data and may store content indefinitely. Microsoft says Translator doesn't store text sent for translation.
+- New: `internal/translate/` (client and tests), `app/translate.go`, `TranslationSettings.svelte`, `TranslationPopup.svelte`, `TranslateDraftButton.svelte`, `lib/translation/languages.ts`. `EditorToolbar.svelte` gained a `trailing` snippet slot.
+
 ## Feature 7: Spell-check language dropdown
 
 The composer's From row has a spell-check language dropdown. Picking a language checks the draft against that dictionary only, so "Hello, je t'aime" gets underlined under English. "All enabled" keeps upstream's behavior, where a word passes if any language switched on in Settings accepts it. The choice is remembered, and English (US) is used until one is picked.

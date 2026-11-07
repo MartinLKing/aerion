@@ -760,6 +760,42 @@ export namespace app {
 		    return a;
 		}
 	}
+	export class TranslatedMessage {
+	    html: string;
+	    text: string;
+	    asText: boolean;
+	    detectedLanguage: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new TranslatedMessage(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.html = source["html"];
+	        this.text = source["text"];
+	        this.asText = source["asText"];
+	        this.detectedLanguage = source["detectedLanguage"];
+	    }
+	}
+	export class TranslationSettings {
+	    configured: boolean;
+	    region: string;
+	    language: string;
+	    languages: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new TranslationSettings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.configured = source["configured"];
+	        this.region = source["region"];
+	        this.language = source["language"];
+	        this.languages = source["languages"];
+	    }
+	}
 
 }
 
@@ -2819,6 +2855,25 @@ export namespace sync {
 		    }
 		    return a;
 		}
+	}
+
+}
+
+export namespace translate {
+	
+	export class Result {
+	    text: string;
+	    detectedLanguage: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Result(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.text = source["text"];
+	        this.detectedLanguage = source["detectedLanguage"];
+	    }
 	}
 
 }

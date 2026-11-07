@@ -1,7 +1,9 @@
 <script lang="ts">
   import Icon from '@iconify/svelte'
   import { BrowserOpenURL } from '../../../../wailsjs/runtime/runtime'
-  import { GetInlineAttachments, AddImageAllowlist, OpenURL } from '../../../../wailsjs/go/app/App'
+  import { GetInlineAttachments, AddImageAllowlist, OpenURL, TranslateText } from '../../../../wailsjs/go/app/App'
+  import TranslationPopup from './TranslationPopup.svelte'
+  import { translationLanguageName } from '$lib/translation/languages'
   import { getCached, setCache } from '../../stores/inlineAttachmentCache'
   import { isImageAllowedSync, refreshImageAllowlist } from '$lib/stores/imageAllowlist.svelte'
   import { setFocusedPane, focusPreviousPane, focusNextPane } from '$lib/stores/keyboard.svelte'
@@ -20,9 +22,14 @@
     onImagesLoaded?: () => void
     encryptedInlineAttachments?: Record<string, string>
     darken?: boolean
+    /** Language to translate selected text into; empty hides the menu item */
+    translateTo?: string
   }
 
-  let { messageId, accountId: _accountId, bodyHtml = '', bodyText = '', fromEmail = '', onCompose, onImagesLoaded, encryptedInlineAttachments, darken = false }: Props = $props()
+  let { messageId, accountId: _accountId, bodyHtml = '', bodyText = '', fromEmail = '', onCompose, onImagesLoaded, encryptedInlineAttachments, darken = false, translateTo = '' }: Props = $props()
+
+  // Translation of the selected text, shown in a small panel
+  let selectionPopup = $state<{ x: number; y: number; loading: boolean; text: string; error: string; detected: string } | null>(null)
 
   // State for remote image handling
   let imagesBlocked = $state(true)
@@ -720,6 +727,20 @@ ${processedHtml}
     }
   }
 
+  // Translate the selected text and show it in a panel by the menu
+  async function translateSelection() {
+    const text = ctxMenuText
+    ctxMenuVisible = false
+    if (!text || !translateTo) return
+    selectionPopup = { x: ctxMenuX, y: ctxMenuY, loading: true, text: '', error: '', detected: '' }
+    try {
+      const result = await TranslateText(text, translateTo)
+      if (selectionPopup) selectionPopup = { ...selectionPopup, loading: false, text: result.text, detected: result.detectedLanguage }
+    } catch (err) {
+      if (selectionPopup) selectionPopup = { ...selectionPopup, loading: false, error: String(err) }
+    }
+  }
+
   // Copy link to clipboard
   async function copyLinkToClipboard() {
     if (!ctxMenuUrl) return
@@ -829,6 +850,15 @@ ${processedHtml}
           <Icon icon="mdi:content-copy" class="w-4 h-4" />
           {$_('viewer.copy')}
         </button>
+        {#if translateTo}
+          <button
+            class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            onclick={translateSelection}
+          >
+            <Icon icon="mdi:translate" class="w-4 h-4" />
+            {$_('translation.translateTo', { values: { language: translationLanguageName(translateTo) } })}
+          </button>
+        {/if}
       {/if}
       {#if ctxMenuUrl}
         <button
@@ -849,6 +879,18 @@ ${processedHtml}
     </div>
   {/if}
 </div>
+
+{#if selectionPopup}
+  <TranslationPopup
+    x={selectionPopup.x}
+    y={selectionPopup.y}
+    loading={selectionPopup.loading}
+    text={selectionPopup.text}
+    error={selectionPopup.error}
+    detectedLanguage={selectionPopup.detected}
+    onClose={() => selectionPopup = null}
+  />
+{/if}
 
 <!-- Click outside to close context menu -->
 {#if ctxMenuVisible}

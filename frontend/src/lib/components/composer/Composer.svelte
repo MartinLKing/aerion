@@ -31,6 +31,7 @@
   import RecipientInput from './RecipientInput.svelte'
   import EditorToolbar from './EditorToolbar.svelte'
   import SpellLanguageSelect from '$lib/spellcheck/SpellLanguageSelect.svelte'
+  import TranslateDraftButton from './TranslateDraftButton.svelte'
   import ComposerAttachmentList from './ComposerAttachmentList.svelte'
   import {
     addParagraphStyles,
@@ -50,6 +51,7 @@
     hasSignatureMarker,
     wrapSignatureHtml,
     getPreQuoteContent,
+    SIGNATURE_MARKER,
   } from './composerSignature'
   import * as Select from '$lib/components/ui/select'
   import * as AlertDialog from '$lib/components/ui/alert-dialog'
@@ -995,6 +997,42 @@
       editor.commands.setContent(removeSignatureFromContent(content, true))
     }
     signatureBelowQuote = false
+  }
+
+  // Translate only what the user wrote: the part above the signature (when it
+  // sits above the quote) or above the quoted text. The rest stays as it is.
+  async function translateDraft(to: string) {
+    if (!editor) return
+    const content = editor.getHTML()
+    const preQuote = getPreQuoteContent(content)
+    let typedEnd = preQuote.length
+    const markerIndex = preQuote.indexOf(SIGNATURE_MARKER)
+    if (markerIndex > -1) {
+      const sigStart = preQuote.lastIndexOf('<p', markerIndex)
+      if (sigStart > -1) typedEnd = sigStart
+    }
+    const typed = content.slice(0, typedEnd)
+    const rest = content.slice(typedEnd)
+
+    const temp = document.createElement('div')
+    temp.innerHTML = typed
+    if (!temp.textContent?.trim()) {
+      addToast({ type: 'info', message: $_('translation.nothingToTranslate') })
+      return
+    }
+
+    try {
+      const translated = await api.translateHTML(typed, to)
+      // The draft may have changed while waiting; don't overwrite newer typing
+      if (editor.getHTML() !== content) {
+        addToast({ type: 'error', message: $_('translation.draftChanged') })
+        return
+      }
+      editor.chain().focus().setContent(translated + rest, true).run()
+      scheduleDraftSave()
+    } catch (err) {
+      addToast({ type: 'error', message: `${$_('translation.failed')}: ${err}` })
+    }
   }
 
   // Handle a pick from the signature dropdown
@@ -2229,7 +2267,13 @@
       {isPlainTextMode}
       onTogglePlainText={togglePlainTextMode}
       onInsertImage={insertImage}
-    />
+    >
+      {#snippet trailing()}
+        {#if !isPlainTextMode}
+          <TranslateDraftButton {api} onTranslate={translateDraft} />
+        {/if}
+      {/snippet}
+    </EditorToolbar>
 
     <!-- Remote images blocked bar -->
     {#if composerImagesBlocked}
