@@ -133,9 +133,14 @@
     discoveryError = null
   }
 
-  // Get available accounts for the selected provider (not already linked)
+  // Get available accounts for the selected provider (not already linked).
+  // Not offered for Microsoft: a linked source reuses the mail account's token,
+  // which is issued for Outlook mail and can't be read by Microsoft Graph
+  // (contacts sync fails with 401), so Microsoft contacts need their own sign-in.
   let availableAccounts = $derived(
-    linkedAccounts.filter(acc => acc.provider === sourceType && !acc.isLinked)
+    sourceType === 'microsoft'
+      ? []
+      : linkedAccounts.filter(acc => acc.provider === sourceType && !acc.isLinked)
   )
 
   // Load existing source data when editing

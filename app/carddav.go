@@ -468,6 +468,15 @@ func (a *App) StartContactsOnlyOAuthFlow(provider string) error {
 		providerConfig = oauth2.MicrosoftContactsOnlyProvider()
 	}
 
+	// The contacts-only configs carry only the build-time credentials, so
+	// credentials saved in Settings were ignored and sign-in failed. Use the
+	// same client the token refresh uses (GetProvider resolves saved
+	// credentials), so the refresh token stays valid for that client.
+	if resolved, err := oauth2.GetProvider(provider); err == nil && resolved.ClientID != "" {
+		providerConfig.ClientID = resolved.ClientID
+		providerConfig.ClientSecret = resolved.ClientSecret
+	}
+
 	// Check if provider is configured
 	if providerConfig.ClientID == "" {
 		return fmt.Errorf("OAuth provider %s is not configured", provider)
