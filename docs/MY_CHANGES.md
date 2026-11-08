@@ -19,6 +19,20 @@ Deliberately kept as Aerion:
 - Labels that really mean Aerion: its terms of use, its official builds and built-in OAuth credentials ("Aerion - Google"), Flatpak notes, and upstream's What's New text.
 - The icon, and the other languages' labels.
 
+## Folder management
+
+The ⋮ menu of each account has "New folder", and right-clicking one of the user's own folders gives "New subfolder", "Rename" and "Delete folder". Changes are made on the mail server, so they appear in webmail and on other devices. Tested on Gmail (where folders are labels) and Outlook.
+
+- System folders (Inbox, Sent, Drafts, Trash, Spam, Archive and similar) can't be renamed or deleted.
+- Delete is refused when the folder still holds mail (checked live on the server, since some servers delete the messages with the folder), has subfolders, or a filter rule files into it.
+- Rename updates the local folder records in place before refreshing, so folder IDs, and the filter rules that use them, survive. Subfolders move with their parent.
+- New: `app/folder_manage.go` (with tests for the path logic), `internal/imap/mailbox_manage.go`, `FolderNameDialog.svelte`. Changed: `FolderContextMenu.svelte`, `FolderTreeItem.svelte`, `AccountSection.svelte`.
+
+## Fix: Microsoft contacts sign-in
+
+- "Sign in with Microsoft" in Settings → Contacts did nothing (a quick flicker). The contacts-only sign-in only used credentials compiled into the app, so credentials saved in Settings were ignored. It now uses the same resolved credentials as token refresh (`StartContactsOnlyOAuthFlow` in `app/carddav.go`). Upstream has the same bug.
+- The Microsoft tab no longer offers to link an existing mail account. That reuses the mail token, which is issued for Outlook IMAP and can't be read by Microsoft Graph, so contacts sync failed with 401 InvalidAuthenticationToken.
+
 ## Feature 1: Own OAuth credentials (Gmail and Outlook)
 
 No code changes. Aerion can already use your own credentials, so these are saved in the app under Settings → Accounts → OAuth credentials, not in the repo. They are tied to this Windows profile and have to be entered again on another PC.

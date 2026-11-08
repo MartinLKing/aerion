@@ -5,9 +5,9 @@ import {account} from '../models';
 import {carddav} from '../models';
 import {backend} from '../models';
 import {v1} from '../models';
+import {folder} from '../models';
 import {app} from '../models';
 import {message} from '../models';
-import {folder} from '../models';
 import {contact} from '../models';
 import {context} from '../models';
 import {smtp} from '../models';
@@ -161,6 +161,8 @@ export function CopyToFolder(arg1:Array<string>,arg2:string):Promise<void>;
 
 export function CountFilterRuleMatches(arg1:string):Promise<number>;
 
+export function CreateFolder(arg1:string,arg2:string,arg3:string):Promise<folder.Folder>;
+
 export function CreateIdentity(arg1:string,arg2:account.IdentityConfig):Promise<account.Identity>;
 
 export function DeleteContact(arg1:string):Promise<void>;
@@ -170,6 +172,8 @@ export function DeleteContactSource(arg1:string):Promise<void>;
 export function DeleteDraft(arg1:string):Promise<void>;
 
 export function DeleteFilterRule(arg1:string):Promise<void>;
+
+export function DeleteFolder(arg1:string,arg2:string):Promise<void>;
 
 export function DeleteIdentity(arg1:string):Promise<void>;
 
@@ -552,6 +556,8 @@ export function RemoveSpellcheckCustomWord(arg1:string):Promise<void>;
 export function RemoveTranslationKey():Promise<void>;
 
 export function RemoveTrustedCertificate(arg1:string):Promise<void>;
+
+export function RenameFolder(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function ReorderAccounts(arg1:Array<string>):Promise<void>;
 

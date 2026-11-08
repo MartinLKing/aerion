@@ -3,6 +3,11 @@
   // @ts-ignore - wailsjs path
   import { account, folder } from '../../../../wailsjs/go/models'
   import FolderTreeItem from './FolderTreeItem.svelte'
+  import FolderNameDialog from './FolderNameDialog.svelte'
+  // @ts-ignore - wailsjs path
+  import { CreateFolder } from '../../../../wailsjs/go/app/App'
+  import { accountStore } from '$lib/stores/accounts.svelte'
+  import { toasts } from '$lib/stores/toast'
   import { _ } from '$lib/i18n'
 
   interface Props {
@@ -78,6 +83,20 @@
     onSync?.()
   }
 
+  // New top-level folder on this account's server
+  let newFolderOpen = $state(false)
+
+  function handleNewFolder() {
+    showMenu = false
+    newFolderOpen = true
+  }
+
+  async function createFolder(name: string) {
+    await CreateFolder(acc.id, '', name)
+    await accountStore.loadFolders(acc.id)
+    toasts.success($_('folders.created', { values: { name } }))
+  }
+
   // Close menu when clicking outside
   function handleClickOutside() {
     showMenu = false
@@ -137,6 +156,13 @@
         </button>
         <button
           class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
+          onclick={handleNewFolder}
+        >
+          <Icon icon="mdi:folder-plus-outline" class="w-4 h-4" />
+          <span>{$_('folders.newFolder')}</span>
+        </button>
+        <button
+          class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
           onclick={handleEdit}
         >
           <Icon icon="mdi:pencil-outline" class="w-4 h-4" />
@@ -153,6 +179,14 @@
       </div>
     {/if}
   </div>
+
+  <FolderNameDialog
+    bind:open={newFolderOpen}
+    title={$_('folders.newFolderTitle')}
+    description={$_('folders.inAccount', { values: { name: acc.name } })}
+    confirmLabel={$_('folders.create')}
+    onSubmit={createFolder}
+  />
 
   <!-- Sync Error — bar removed; spinner in header + phase label in bottom status convey sync state. -->
   {#if syncError}

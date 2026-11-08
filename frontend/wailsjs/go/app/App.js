@@ -282,6 +282,10 @@ export function CountFilterRuleMatches(arg1) {
   return window['go']['app']['App']['CountFilterRuleMatches'](arg1);
 }
 
+export function CreateFolder(arg1, arg2, arg3) {
+  return window['go']['app']['App']['CreateFolder'](arg1, arg2, arg3);
+}
+
 export function CreateIdentity(arg1, arg2) {
   return window['go']['app']['App']['CreateIdentity'](arg1, arg2);
 }
@@ -300,6 +304,10 @@ export function DeleteDraft(arg1) {
 
 export function DeleteFilterRule(arg1) {
   return window['go']['app']['App']['DeleteFilterRule'](arg1);
+}
+
+export function DeleteFolder(arg1, arg2) {
+  return window['go']['app']['App']['DeleteFolder'](arg1, arg2);
 }
 
 export function DeleteIdentity(arg1) {
@@ -1064,6 +1072,10 @@ export function RemoveTranslationKey() {
 
 export function RemoveTrustedCertificate(arg1) {
   return window['go']['app']['App']['RemoveTrustedCertificate'](arg1);
+}
+
+export function RenameFolder(arg1, arg2, arg3) {
+  return window['go']['app']['App']['RenameFolder'](arg1, arg2, arg3);
 }
 
 export function ReorderAccounts(arg1) {

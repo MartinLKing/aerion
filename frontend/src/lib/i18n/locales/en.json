@@ -469,6 +469,24 @@
     "alwaysLoadImagesWarningDescription": "Loading remote images automatically can expose your IP address, confirm when you read an email, and allow tracking by senders. Are you sure you want to disable image blocking?",
     "disable": "Disable"
   },
+  "folders": {
+    "newFolder": "New folder",
+    "newSubfolder": "New subfolder",
+    "rename": "Rename",
+    "delete": "Delete folder",
+    "create": "Create",
+    "name": "Folder name",
+    "newFolderTitle": "New folder",
+    "newSubfolderTitle": "New subfolder",
+    "renameTitle": "Rename folder",
+    "inAccount": "In {name}",
+    "inside": "Inside {name}",
+    "deleteTitle": "Delete \"{name}\"?",
+    "deleteDescription": "Only empty folders can be deleted, so no mail is lost. The folder is removed from the server, including on your other devices.",
+    "created": "Folder \"{name}\" created",
+    "renamed": "Folder renamed to \"{name}\"",
+    "deleted": "Folder \"{name}\" deleted"
+  },
   "addToCalendar": {
     "button": "Add to calendar",
     "from": "From",
