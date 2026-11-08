@@ -41,7 +41,8 @@ type AppInfo struct {
 // GetAppInfo returns application metadata for the About dialog
 func (a *App) GetAppInfo() AppInfo {
 	return AppInfo{
-		Name:        "Aerion",
+		// Emailio is a personal fork of Aerion; the About tab credits Aerion
+		Name:        "Emailio",
 		Version:     Version,
 		Description: "An Open Source Lightweight E-Mail Client",
 		Website:     "https://github.com/hkdb/aerion",

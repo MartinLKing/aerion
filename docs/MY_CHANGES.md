@@ -2,6 +2,23 @@
 
 Notes on what this personal fork changes compared with upstream Aerion.
 
+**Emailio** is a personal fork of [Aerion](https://github.com/hkdb/aerion), the open source email client by hkdb, licensed under Apache 2.0 (see `LICENSE`). This file and the git history record what was changed.
+
+## Renamed to Emailio
+
+Only the name users see changed, and the About tab credits Aerion.
+
+Renamed:
+- The window and title bar, the startup splash, and the composer window title.
+- The program name (`wails build` produces `emailio.exe`, dev runs `emailio-dev.exe`), and the product details in `wails.json`.
+- Startup error dialogs, the notification app name, and the English labels that refer to the app itself, including in the calendar and contacts extensions.
+
+Deliberately kept as Aerion:
+- The data folder `%APPDATA%\Aerion`, the database, and the "aerion" Windows Credential Manager entries. Renaming these would disconnect the accounts and saved logins.
+- Go module and package names, internal IDs, the IMAP client ID sent to servers, and environment variables such as `AERION_LOG_LEVEL`, so upstream merges stay easy.
+- Labels that really mean Aerion: its terms of use, its official builds and built-in OAuth credentials ("Aerion - Google"), Flatpak notes, and upstream's What's New text.
+- The icon, and the other languages' labels.
+
 ## Feature 1: Own OAuth credentials (Gmail and Outlook)
 
 No code changes. Aerion can already use your own credentials, so these are saved in the app under Settings → Accounts → OAuth credentials, not in the repo. They are tied to this Windows profile and have to be entered again on another PC.

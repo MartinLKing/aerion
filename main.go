@@ -183,7 +183,7 @@ func runMainMode(mailtoData *app.MailtoData, rawMailtoArg string) {
 
 	// Create application with options
 	err = wails.Run(&options.App{
-		Title:                    "Aerion",
+		Title:                    "Emailio",
 		Width:                    windowWidth,
 		Height:                   windowHeight,
 		MinWidth:                 360,

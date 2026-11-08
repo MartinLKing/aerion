@@ -64,6 +64,11 @@
       {appInfo.description}
     </p>
 
+    <!-- Credit to the original project -->
+    <p class="text-center text-sm text-muted-foreground max-w-sm">
+      {$_('settingsAbout.basedOn')}
+    </p>
+
     <!-- Links -->
     <div class="flex flex-col items-center gap-2">
       <button

@@ -120,7 +120,7 @@
     "delete": {
       "title": "Delete this contact?",
       "descriptionLocal": "{name} will be removed from your local contacts. Mail you've already sent to this address is not affected.",
-      "descriptionCardDAV": "{name} will be removed from this address book on the server. This cannot be undone from Aerion."
+      "descriptionCardDAV": "{name} will be removed from this address book on the server. This cannot be undone from Emailio."
     },
     "settings": {
       "title": "Contacts settings",
