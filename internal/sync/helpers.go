@@ -2,11 +2,10 @@ package sync
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
-	"time"
 
 	"github.com/emersion/go-imap/v2"
+	"github.com/google/uuid"
 	"github.com/hkdb/aerion/internal/folder"
 	imapPkg "github.com/hkdb/aerion/internal/imap"
 	"github.com/hkdb/aerion/internal/message"
@@ -155,7 +154,10 @@ func extractFolderName(path, delimiter string) string {
 	return parts[len(parts)-1]
 }
 
-// generateID generates a unique ID for attachments
+// generateID generates a unique ID for attachments. A timestamp is not enough:
+// on Windows the clock ticks every 0.5-15 ms, so attachments parsed in the
+// same tick got the same ID and all but the first were rejected by the
+// primary key, silently dropping them.
 func generateID() string {
-	return fmt.Sprintf("%d", time.Now().UnixNano())
+	return uuid.New().String()
 }

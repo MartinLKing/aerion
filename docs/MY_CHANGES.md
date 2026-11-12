@@ -156,3 +156,10 @@ Ticking messages shows a bar at the top of the list with the count, Archive, Del
 ## Threads show newest first
 
 Conversations display the newest message at the top and open scrolled to the top. Only the display order changed in `ConversationViewer.svelte`: the underlying list stays oldest-first, because other code (such as replying to the latest message) relies on that.
+
+## Fix: received messages lost most of their attachments
+
+Messages with several attachments showed only one or two of them, and inline images kept showing "Loading...". The files were sent and received in full; Emailio dropped them while saving the message. Attachment IDs were made from the current time, and on Windows the clock only moves every 0.5-15 ms, so attachments read in the same tick shared an ID and the database kept only the first. Upstream Aerion has the same bug; it rarely shows on Linux.
+
+- `generateID` in `internal/sync/helpers.go` now returns a UUID. Test: `internal/sync/attachment_id_test.go`.
+- Messages synced before the fix keep their missing attachments, since already-stored messages aren't re-read.
