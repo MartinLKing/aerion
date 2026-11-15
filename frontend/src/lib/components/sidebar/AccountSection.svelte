@@ -9,6 +9,7 @@
   import { accountStore } from '$lib/stores/accounts.svelte'
   import { toasts } from '$lib/stores/toast'
   import { _ } from '$lib/i18n'
+  import { accountErrorDetail, classifyAccountError } from '$lib/utils/accountError'
 
   interface Props {
     account: account.Account
@@ -54,6 +55,37 @@
 
   let showMenu = $state(false)
 
+  // Red exclamation: what went wrong, in plain words plus the raw text.
+  let showError = $state(false)
+  const errorDetail = $derived(accountErrorDetail(error, acc.email) || syncError?.error || '')
+  const errorKind = $derived(classifyAccountError(errorDetail))
+
+  $effect(() => {
+    if (!errorDetail) showError = false
+  })
+
+  function toggleError(e: Event) {
+    e.stopPropagation()
+    showMenu = false
+    showError = !showError
+  }
+
+  function handleErrorKeydown(e: KeyboardEvent) {
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    e.preventDefault()
+    toggleError(e)
+  }
+
+  function handleErrorRetry() {
+    showError = false
+    onSync?.()
+  }
+
+  function handleErrorEdit() {
+    showError = false
+    onEdit?.()
+  }
+
   // Toggle expand/collapse via callback
   function toggleExpanded() {
     onToggleExpanded?.()
@@ -65,6 +97,7 @@
 
   function toggleMenu(e: MouseEvent) {
     e.stopPropagation()
+    showError = false
     showMenu = !showMenu
   }
 
@@ -100,6 +133,7 @@
   // Close menu when clicking outside
   function handleClickOutside() {
     showMenu = false
+    showError = false
   }
 </script>
 
@@ -123,12 +157,61 @@
 
       {#if syncing}
         <Icon icon="mdi:sync" class="w-4 h-4 animate-spin text-muted-foreground" />
-      {:else if error}
-        <span title={error}>
+      {:else if errorDetail}
+        <!-- mr-6 keeps it clear of the "⋮" button, which sits on top of this
+             corner on hover and used to swallow the tooltip and clicks. -->
+        <span
+          class="mr-6 flex items-center rounded hover:bg-destructive/10"
+          role="button"
+          tabindex="0"
+          title={$_('sidebar.accountError.' + errorKind)}
+          aria-label={$_('sidebar.accountError.show')}
+          onclick={toggleError}
+          onkeydown={handleErrorKeydown}
+        >
           <Icon icon="mdi:alert-circle" class="w-4 h-4 text-destructive" />
         </span>
       {/if}
     </button>
+
+    <!-- Error details popup -->
+    {#if showError && errorDetail}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <div
+        class="absolute left-2 right-2 top-full mt-1 z-50 bg-popover border border-border rounded-md shadow-md p-3 space-y-2"
+        role="dialog"
+        tabindex="-1"
+        aria-label={$_('sidebar.accountError.show')}
+        onclick={(e) => e.stopPropagation()}
+      >
+        <div class="flex items-start gap-2">
+          <Icon icon="mdi:alert-circle" class="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-foreground">{$_('sidebar.accountError.' + errorKind)}</p>
+            <p class="text-xs text-muted-foreground">{$_('sidebar.accountError.' + errorKind + 'Hint')}</p>
+          </div>
+        </div>
+        <p class="text-xs text-muted-foreground break-words max-h-32 overflow-y-auto select-text bg-muted/50 rounded p-2">
+          {errorDetail}
+        </p>
+        <div class="flex gap-2">
+          <button
+            class="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs rounded border border-border hover:bg-muted transition-colors"
+            onclick={handleErrorRetry}
+          >
+            <Icon icon="mdi:sync" class="w-3.5 h-3.5" />
+            <span>{$_('sidebar.accountError.tryAgain')}</span>
+          </button>
+          <button
+            class="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs rounded border border-border hover:bg-muted transition-colors"
+            onclick={handleErrorEdit}
+          >
+            <Icon icon="mdi:pencil-outline" class="w-3.5 h-3.5" />
+            <span>{$_('sidebar.editAccount')}</span>
+          </button>
+        </div>
+      </div>
+    {/if}
 
     <!-- Account Menu Button -->
     <button
@@ -191,10 +274,14 @@
   <!-- Sync Error — bar removed; spinner in header + phase label in bottom status convey sync state. -->
   {#if syncError}
     <div class="px-3 py-1.5">
-      <div class="flex items-center gap-2 text-destructive">
+      <button
+        class="flex items-center gap-2 text-destructive hover:underline"
+        title={$_('sidebar.accountError.show')}
+        onclick={toggleError}
+      >
         <Icon icon="mdi:alert-circle" class="w-4 h-4 flex-shrink-0" />
-        <p class="text-xs">{$_('sidebar.syncError')}</p>
-      </div>
+        <span class="text-xs">{$_('sidebar.syncError')}</span>
+      </button>
     </div>
   {/if}
 

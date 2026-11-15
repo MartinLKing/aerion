@@ -174,3 +174,11 @@ A conversation row shows a reply arrow when you have answered its newest message
 - Sending a reply or forward from Emailio (main window or pop-out composer) flags the original straight away and passes the flag on to the mail server. Servers that refuse the forwarded keyword only log a warning; the arrow still shows from the Sent folder.
 - New: `internal/message/reply_state.go` (with tests), `app/reply_state.go`. The list queries in `store.go` are untouched apart from one added call each; the state is looked up for the page being shown, not the whole folder.
 - No database changes.
+
+## Red exclamation on an account explains itself
+
+The red exclamation next to an account name means the last sync, or loading the folder list, failed. Clicking it now opens a small popup with a plain-language summary, the raw error text from the mail server, and Try again / Edit Account buttons. The "Sync error. Try again..." line under an account opens the same popup.
+
+- Upstream attaches the error as a hover tooltip, but the hidden "⋮" menu button sits on top of the icon and swallows the hover, so it never showed. The icon now sits to the left of that button.
+- New: `frontend/src/lib/utils/accountError.ts` sorts errors into sign-in, certificate, connection, timeout or unknown from their wording, and picks one account's part out of a "sync all" error. The popup is in `AccountSection.svelte`.
+- Frontend only; no backend changes.
