@@ -409,7 +409,7 @@ func (c *ComposerApp) notifyClosed() {
 }
 
 // notifyMessageSent sends a message-sent notification to the main window.
-func (c *ComposerApp) notifyMessageSent(accountID string, folderID int64) {
+func (c *ComposerApp) notifyMessageSent(accountID string, folderID int64, inReplyTo, subject string) {
 	if c.ipcClient == nil {
 		return
 	}
@@ -417,6 +417,8 @@ func (c *ComposerApp) notifyMessageSent(accountID string, folderID int64) {
 	msg, err := ipc.NewMessage(ipc.TypeMessageSent, ipc.MessageSentPayload{
 		AccountID: accountID,
 		FolderID:  folderID,
+		InReplyTo: inReplyTo,
+		Subject:   subject,
 	})
 	if err != nil {
 		return
@@ -672,7 +674,7 @@ func (c *ComposerApp) SendMessage(accountID string, msg smtp.ComposeMessage) err
 	}
 
 	// Notify main window
-	c.notifyMessageSent(accountID, sentFolderID)
+	c.notifyMessageSent(accountID, sentFolderID, msg.InReplyTo, msg.Subject)
 
 	return nil
 }

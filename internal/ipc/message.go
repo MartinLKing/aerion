@@ -55,6 +55,10 @@ const (
 type MessageSentPayload struct {
 	AccountID string `json:"account_id"`
 	FolderID  int64  `json:"folder_id"`
+	// Set when the sent message answered or forwarded another one (Emailio),
+	// so the main window can flag the original.
+	InReplyTo string `json:"in_reply_to,omitempty"`
+	Subject   string `json:"subject,omitempty"`
 }
 
 // DraftSavedPayload is the payload for TypeDraftSaved messages.

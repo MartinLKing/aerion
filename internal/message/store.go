@@ -202,6 +202,7 @@ func (s *Store) ListConversationsUnifiedInbox(offset, limit int, sortOrder, filt
 		conversations = append(conversations, c)
 	}
 
+	s.fillReplyState(conversations)
 	return conversations, nil
 }
 
@@ -1393,6 +1394,7 @@ func (s *Store) ListConversationsByFolder(folderID string, offset, limit int, so
 		conversations = append(conversations, c)
 	}
 
+	s.fillReplyState(conversations)
 	return conversations, nil
 }
 
@@ -2472,6 +2474,7 @@ func (s *Store) SearchConversations(folderID, query string, offset, limit int, f
 		results = append(results, c)
 	}
 
+	s.fillSearchReplyState(results)
 	return results, totalCount, nil
 }
 
@@ -2603,6 +2606,7 @@ func (s *Store) SearchConversationsUnifiedInbox(query string, offset, limit int,
 		results = append(results, c)
 	}
 
+	s.fillSearchReplyState(results)
 	return results, totalCount, nil
 }
 

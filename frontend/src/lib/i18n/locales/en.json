@@ -85,6 +85,8 @@
     "showingNewest": "Showing newest first",
     "showingOldest": "Showing oldest first",
     "foundIn": "Found in {folder}",
+    "replied": "Replied",
+    "forwarded": "Forwarded",
     "encryptedContent": "(Encrypted content)",
     "noContent": "(No content)",
     "filter": "Filter",

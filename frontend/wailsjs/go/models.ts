@@ -2072,6 +2072,8 @@ export namespace message {
 	    unreadCount: number;
 	    hasAttachments: boolean;
 	    isStarred: boolean;
+	    isAnswered: boolean;
+	    isForwarded: boolean;
 	    // Go type: time
 	    latestDate: any;
 	    participants: Address[];
@@ -2096,6 +2098,8 @@ export namespace message {
 	        this.unreadCount = source["unreadCount"];
 	        this.hasAttachments = source["hasAttachments"];
 	        this.isStarred = source["isStarred"];
+	        this.isAnswered = source["isAnswered"];
+	        this.isForwarded = source["isForwarded"];
 	        this.latestDate = this.convertValues(source["latestDate"], null);
 	        this.participants = this.convertValues(source["participants"], Address);
 	        this.messageIds = source["messageIds"];
@@ -2133,6 +2137,8 @@ export namespace message {
 	    unreadCount: number;
 	    hasAttachments: boolean;
 	    isStarred: boolean;
+	    isAnswered: boolean;
+	    isForwarded: boolean;
 	    // Go type: time
 	    latestDate: any;
 	    participants: Address[];
@@ -2162,6 +2168,8 @@ export namespace message {
 	        this.unreadCount = source["unreadCount"];
 	        this.hasAttachments = source["hasAttachments"];
 	        this.isStarred = source["isStarred"];
+	        this.isAnswered = source["isAnswered"];
+	        this.isForwarded = source["isForwarded"];
 	        this.latestDate = this.convertValues(source["latestDate"], null);
 	        this.participants = this.convertValues(source["participants"], Address);
 	        this.messageIds = source["messageIds"];

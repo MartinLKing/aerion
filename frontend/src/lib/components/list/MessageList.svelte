@@ -241,6 +241,22 @@
       }
     })
 
+    // A reply or forward was just sent: show the arrow on the original's row
+    // straight away (Emailio). A later reload recomputes it from the database.
+    EventsOn('messages:respondedChanged', (data: { messageIds: string[], isAnswered: boolean, isForwarded: boolean }) => {
+      let anyUpdated = false
+      for (const c of [...conversations, ...searchResults]) {
+        if (!(c.messageIds || []).some((id: string) => data.messageIds.includes(id))) continue
+        if (data.isAnswered) c.isAnswered = true
+        if (data.isForwarded) c.isForwarded = true
+        anyUpdated = true
+      }
+      if (anyUpdated) {
+        conversations = conversations
+        searchResults = searchResults
+      }
+    })
+
     // Listen for FTS indexing progress
     EventsOn('fts:progress', (data: { folderId: string; indexed: number; total: number; percentage: number }) => {
       if (folderId && data.folderId === folderId) {
@@ -290,6 +306,7 @@
     EventsOff('folder:synced')
     EventsOff('messages:updated')
     EventsOff('messages:readChanged')
+    EventsOff('messages:respondedChanged')
     EventsOff('fts:progress')
     EventsOff('fts:complete')
     EventsOff('fts:indexing')

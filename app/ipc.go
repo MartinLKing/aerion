@@ -116,6 +116,8 @@ func (a *App) handleComposerMessageSent(payload ipc.MessageSentPayload) {
 		"folderId":  payload.FolderID,
 	})
 
+	a.markOriginalResponded(payload.AccountID, payload.InReplyTo, payload.Subject)
+
 	// Sync Sent folder to pick up the new message
 	go func() {
 		defer recoverPanic("app.ipc", "sync sent folder")

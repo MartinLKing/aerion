@@ -367,6 +367,10 @@ func (a *App) syncFlagsToIMAP(messages []*message.Message, folderID, flagType st
 		flag = goImap.FlagSeen
 	case "starred":
 		flag = goImap.FlagFlagged
+	case "answered":
+		flag = goImap.FlagAnswered
+	case "forwarded":
+		flag = goImap.Flag("$Forwarded")
 	}
 
 	return a.withIMAPRetry(messages[0].AccountID, func(conn *imap.Client) error {

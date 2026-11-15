@@ -551,6 +551,7 @@ func (a *App) SendMessage(accountID string, msg smtp.ComposeMessage) error {
 	if err != nil {
 		return err
 	}
+	a.markOriginalResponded(accountID, msg.InReplyTo, msg.Subject)
 	go func() {
 		if err := a.syncSentFolder(accountID); err != nil {
 			log := logging.WithComponent("app")

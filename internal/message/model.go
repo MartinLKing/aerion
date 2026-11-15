@@ -128,6 +128,8 @@ type Conversation struct {
 	UnreadCount    int        `json:"unreadCount"`
 	HasAttachments bool       `json:"hasAttachments"`
 	IsStarred      bool       `json:"isStarred"`
+	IsAnswered     bool       `json:"isAnswered"`  // Newest message has been replied to (Emailio)
+	IsForwarded    bool       `json:"isForwarded"` // Newest message has been forwarded (Emailio)
 	LatestDate     time.Time  `json:"latestDate"`
 	Participants   []Address  `json:"participants"`
 	MessageIDs     []string   `json:"messageIds"`         // Message IDs for context menu actions

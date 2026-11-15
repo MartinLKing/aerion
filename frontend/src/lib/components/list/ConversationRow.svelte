@@ -603,6 +603,16 @@
               <Icon icon="mdi:cloud-outline" class="{densityClasses.icon[density]} text-muted-foreground" />
             </span>
           {/if}
+          {#if conversation.isAnswered}
+            <span title={$_('messageList.replied')}>
+              <Icon icon="mdi:reply" class="{densityClasses.icon[density]} text-muted-foreground" />
+            </span>
+          {/if}
+          {#if conversation.isForwarded}
+            <span title={$_('messageList.forwarded')}>
+              <Icon icon="mdi:share" class="{densityClasses.icon[density]} text-muted-foreground" />
+            </span>
+          {/if}
           {#if conversation.hasAttachments}
             <Icon icon="mdi:paperclip" class="{densityClasses.icon[density]} text-muted-foreground" />
           {/if}

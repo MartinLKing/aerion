@@ -163,3 +163,14 @@ Messages with several attachments showed only one or two of them, and inline ima
 
 - `generateID` in `internal/sync/helpers.go` now returns a UUID. Test: `internal/sync/attachment_id_test.go`.
 - Messages synced before the fix keep their missing attachments, since already-stored messages aren't re-read.
+
+## Replied and forwarded arrows in the message list
+
+A conversation row shows a reply arrow when you have answered its newest message, and a forward arrow when you have forwarded it. Upstream stores the server's replied/forwarded flags but never shows them, and never sets them when you send.
+
+- The arrow reflects the newest message in the row, so it goes away again when a new, unanswered message arrives in the thread.
+- A message counts as replied when the server flag says so, or when the account's Sent folder holds a message written in reply to it. The second check is needed because Gmail and Outlook don't reliably set the flag for replies sent from their own web and phone apps.
+- A sent message that answers another one counts as a forward when its subject starts with Fw:, Fwd:, TR:, WG: or RV:; otherwise it is a reply.
+- Sending a reply or forward from Emailio (main window or pop-out composer) flags the original straight away and passes the flag on to the mail server. Servers that refuse the forwarded keyword only log a warning; the arrow still shows from the Sent folder.
+- New: `internal/message/reply_state.go` (with tests), `app/reply_state.go`. The list queries in `store.go` are untouched apart from one added call each; the state is looked up for the page being shown, not the whole folder.
+- No database changes.
