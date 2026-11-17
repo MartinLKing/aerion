@@ -522,6 +522,10 @@ export function GetDefaultAddressEnabled(arg1, arg2) {
   return window['go']['app']['App']['GetDefaultAddressEnabled'](arg1, arg2);
 }
 
+export function GetDefaultMailAppStatus() {
+  return window['go']['app']['App']['GetDefaultMailAppStatus']();
+}
+
 export function GetDraft(arg1) {
   return window['go']['app']['App']['GetDraft'](arg1);
 }
@@ -978,6 +982,10 @@ export function OpenComposerWindow(arg1, arg2, arg3, arg4, arg5) {
   return window['go']['app']['App']['OpenComposerWindow'](arg1, arg2, arg3, arg4, arg5);
 }
 
+export function OpenDefaultAppsSettings() {
+  return window['go']['app']['App']['OpenDefaultAppsSettings']();
+}
+
 export function OpenEncryptedAttachment(arg1, arg2) {
   return window['go']['app']['App']['OpenEncryptedAttachment'](arg1, arg2);
 }
@@ -1048,6 +1056,10 @@ export function RebuildFTSIndex(arg1) {
 
 export function RefreshWindowConstraints() {
   return window['go']['app']['App']['RefreshWindowConstraints']();
+}
+
+export function RegisterAsMailApp() {
+  return window['go']['app']['App']['RegisterAsMailApp']();
 }
 
 export function RemoveAccount(arg1) {
@@ -1420,6 +1432,10 @@ export function Trash(arg1) {
 
 export function Undo() {
   return window['go']['app']['App']['Undo']();
+}
+
+export function UnregisterAsMailApp() {
+  return window['go']['app']['App']['UnregisterAsMailApp']();
 }
 
 export function Unstar(arg1) {

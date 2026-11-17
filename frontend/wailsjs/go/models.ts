@@ -431,6 +431,26 @@ export namespace app {
 	        this.contentId = source["contentId"];
 	    }
 	}
+	export class DefaultMailAppStatus {
+	    supported: boolean;
+	    registered: boolean;
+	    registeredPath: string;
+	    currentPath: string;
+	    upToDate: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new DefaultMailAppStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.supported = source["supported"];
+	        this.registered = source["registered"];
+	        this.registeredPath = source["registeredPath"];
+	        this.currentPath = source["currentPath"];
+	        this.upToDate = source["upToDate"];
+	    }
+	}
 	export class DraftResult {
 	    draft?: draft.Draft;
 	

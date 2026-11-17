@@ -195,3 +195,13 @@ Three causes, all in how drafts are uploaded:
 
 - Changed: `app/draft.go` (shared by the main window and the pop-out composer), `internal/draft/store.go` (`Update` no longer writes the copy location; new `MarkSyncFailed`). Tests in `internal/draft/store_test.go`.
 - Leftover drafts from before the fix stay until deleted by hand.
+
+## Default email app setting
+
+Settings → General → Default email app makes Emailio available in Windows Settings → Default apps, so it can be chosen for mailto links. The button registers the running copy of Emailio for the current Windows user and opens Default apps; you then pick Emailio for MAILTO there. Windows doesn't let an app make itself the default.
+
+- Upstream's installer does the same registration for all users (needs admin). This writes it for the current user only (`HKEY_CURRENT_USER`), pointing at the exe that is running, so it works without the installer.
+- Run it from the built `emailio.exe`, not dev mode, or Default apps will open the dev build. If you move the exe, open the setting again and use "Use this copy".
+- "Remove" deletes the entries again.
+- Only `mailto` for now. Opening `.ics` and `.eml` files would need Emailio to handle file arguments first.
+- New: `internal/platform/mailclient_windows.go` (stub for other systems in `mailclient_other.go`), `app/default_mail_app.go`, `frontend/src/lib/components/settings/DefaultMailAppSection.svelte`.

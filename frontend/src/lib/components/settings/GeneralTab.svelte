@@ -7,6 +7,7 @@
   import { _, setLocale } from '$lib/i18n'
   import { supportedLocales } from '$lib/i18n'
   import { getIsDarkActive } from '$lib/stores/theme.svelte'
+  import DefaultMailAppSection from './DefaultMailAppSection.svelte'
 
   interface Props {
     markAsReadDelaySeconds: number
@@ -511,6 +512,8 @@
       </div>
     </div>
   </div>
+
+  <DefaultMailAppSection />
 
 </div>
 

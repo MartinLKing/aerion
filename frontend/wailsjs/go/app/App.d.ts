@@ -281,6 +281,8 @@ export function GetDefaultAddress(arg1:string,arg2:string):Promise<string>;
 
 export function GetDefaultAddressEnabled(arg1:string,arg2:string):Promise<boolean>;
 
+export function GetDefaultMailAppStatus():Promise<app.DefaultMailAppStatus>;
+
 export function GetDraft(arg1:string):Promise<smtp.ComposeMessage>;
 
 export function GetFTSIndexStatus(arg1:string):Promise<message.FTSIndexStatus>;
@@ -509,6 +511,8 @@ export function OpenAttachment(arg1:string):Promise<void>;
 
 export function OpenComposerWindow(arg1:string,arg2:string,arg3:string,arg4:string,arg5:string):Promise<void>;
 
+export function OpenDefaultAppsSettings():Promise<void>;
+
 export function OpenEncryptedAttachment(arg1:string,arg2:string):Promise<void>;
 
 export function OpenFile(arg1:string):Promise<void>;
@@ -544,6 +548,8 @@ export function ReauthorizeAccount(arg1:string):Promise<void>;
 export function RebuildFTSIndex(arg1:string):Promise<void>;
 
 export function RefreshWindowConstraints():Promise<void>;
+
+export function RegisterAsMailApp():Promise<void>;
 
 export function RemoveAccount(arg1:string):Promise<void>;
 
@@ -730,6 +736,8 @@ export function TranslateText(arg1:string,arg2:string):Promise<translate.Result>
 export function Trash(arg1:Array<string>):Promise<boolean>;
 
 export function Undo():Promise<string>;
+
+export function UnregisterAsMailApp():Promise<void>;
 
 export function Unstar(arg1:Array<string>):Promise<void>;
 
