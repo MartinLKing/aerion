@@ -81,10 +81,14 @@ func (s *Store) Update(d *Draft) error {
 			encrypted = ?, encrypted_body = ?,
 			pgp_sign_message = ?, pgp_encrypted = ?, pgp_encrypted_body = ?,
 			attachments_data = ?,
-			sync_status = ?, imap_uid = ?,
-			folder_id = ?, last_sync_attempt = ?, sync_error = ?, updated_at = ?
+			sync_status = ?, updated_at = ?
 		WHERE id = ?
 	`
+	// imap_uid and folder_id (where the server copy is) are deliberately not
+	// written here: only the IMAP sync sets them, via UpdateSyncStatus. A
+	// content save holds a copy of the draft read earlier, and writing its
+	// stale UID back would lose track of the copy on the server, leaving it
+	// behind as a duplicate (Emailio fix).
 
 	_, err := s.db.Exec(query,
 		d.ToList, d.CcList, d.BccList, nullString(d.ReplyTo), d.Subject,
@@ -93,8 +97,7 @@ func (s *Store) Update(d *Draft) error {
 		d.Encrypted, nullBytes(d.EncryptedBody),
 		d.PGPSignMessage, d.PGPEncrypted, nullBytes(d.PGPEncryptedBody),
 		nullBytes(d.AttachmentsData),
-		d.SyncStatus, nullUint32(d.IMAPUID),
-		nullString(d.FolderID), nullTime(d.LastSyncAttempt), nullString(d.SyncError), d.UpdatedAt,
+		d.SyncStatus, d.UpdatedAt,
 		d.ID,
 	)
 	if err != nil {
@@ -305,6 +308,21 @@ func (s *Store) UpdateSyncStatus(id string, status SyncStatus, imapUID uint32, f
 		Uint32("imap_uid", imapUID).
 		Msg("Updated draft sync status")
 
+	return nil
+}
+
+// MarkSyncFailed records a failed IMAP sync without forgetting where the
+// previous server copy is (imap_uid / folder_id stay as they are), so the
+// next sync or a delete can still remove that copy (Emailio fix).
+func (s *Store) MarkSyncFailed(id string, syncError string) error {
+	now := time.Now()
+	_, err := s.db.Exec(`
+		UPDATE drafts SET sync_status = ?, last_sync_attempt = ?, sync_error = ?, updated_at = ?
+		WHERE id = ?
+	`, SyncStatusFailed, now, nullString(syncError), now, id)
+	if err != nil {
+		return fmt.Errorf("failed to mark draft sync failed: %w", err)
+	}
 	return nil
 }
 

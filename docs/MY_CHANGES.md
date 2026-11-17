@@ -182,3 +182,16 @@ The red exclamation next to an account name means the last sync, or loading the 
 - Upstream attaches the error as a hover tooltip, but the hidden "⋮" menu button sits on top of the icon and swallows the hover, so it never showed. The icon now sits to the left of that button.
 - New: `frontend/src/lib/utils/accountError.ts` sorts errors into sign-in, certificate, connection, timeout or unknown from their wording, and picks one account's part out of a "sync all" error. The popup is in `AccountSection.svelte`.
 - Frontend only; no backend changes.
+
+## Fix: sent messages appeared twice in a conversation
+
+Autosave sometimes left an old copy of a draft on the server. After sending, that copy stayed in Drafts, and since the conversation view includes Drafts, it showed up as a second copy of the sent message, with an earlier time and slightly older text. Messages were only ever sent once. It happened more with attachments or a slow server, because uploads take longer.
+
+Three causes, all in how drafts are uploaded:
+
+- When an autosave was replaced by a newer one mid-upload, the code tried to delete the copy it had just uploaded using an already-cancelled request, so the delete always failed. It now uses a fresh one.
+- A new autosave could start before the previous upload had recorded where its copy went, so the old copy was never deleted. Uploads and deletes of the same draft now run one at a time, and each re-reads where the current copy is first. Saving the draft text also no longer writes back an out-of-date copy location.
+- Deleting the draft after sending skipped the server copy whenever a newer autosave was still pending. It now deletes any recorded copy. A failed upload also keeps the record of the old copy instead of forgetting it.
+
+- Changed: `app/draft.go` (shared by the main window and the pop-out composer), `internal/draft/store.go` (`Update` no longer writes the copy location; new `MarkSyncFailed`). Tests in `internal/draft/store_test.go`.
+- Leftover drafts from before the fix stay until deleted by hand.

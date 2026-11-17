@@ -198,3 +198,62 @@ func TestSyncStatusUpdate(t *testing.T) {
 		t.Errorf("FolderID = %q, want %q", got.FolderID, folderID)
 	}
 }
+
+// A content save made with a copy of the draft read before the IMAP sync
+// finished must not wipe the server UID the sync recorded meanwhile.
+func TestUpdateKeepsServerCopy(t *testing.T) {
+	db := openTestDB(t)
+	accountID := insertTestAccount(t, db)
+	folderID := insertTestFolder(t, db, accountID)
+	store := NewStore(db)
+
+	d := &Draft{AccountID: accountID, Subject: "v1", BodyText: "v1"}
+	if err := store.Create(d); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+	stale, _ := store.Get(d.ID) // read before the sync recorded the UID
+
+	if err := store.UpdateSyncStatus(d.ID, SyncStatusSynced, 39, folderID, ""); err != nil {
+		t.Fatalf("UpdateSyncStatus failed: %v", err)
+	}
+
+	stale.Subject = "v2"
+	stale.SyncStatus = SyncStatusPending
+	if err := store.Update(stale); err != nil {
+		t.Fatalf("Update failed: %v", err)
+	}
+
+	got, _ := store.Get(d.ID)
+	if got.Subject != "v2" {
+		t.Errorf("Subject = %q, want v2", got.Subject)
+	}
+	if got.IMAPUID != 39 || got.FolderID != folderID {
+		t.Errorf("server copy lost: uid=%d folder=%q, want 39/%q", got.IMAPUID, got.FolderID, folderID)
+	}
+}
+
+func TestMarkSyncFailedKeepsServerCopy(t *testing.T) {
+	db := openTestDB(t)
+	accountID := insertTestAccount(t, db)
+	folderID := insertTestFolder(t, db, accountID)
+	store := NewStore(db)
+
+	d := &Draft{AccountID: accountID, Subject: "s", BodyText: "s"}
+	if err := store.Create(d); err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+	if err := store.UpdateSyncStatus(d.ID, SyncStatusSynced, 7, folderID, ""); err != nil {
+		t.Fatalf("UpdateSyncStatus failed: %v", err)
+	}
+	if err := store.MarkSyncFailed(d.ID, "connection lost"); err != nil {
+		t.Fatalf("MarkSyncFailed failed: %v", err)
+	}
+
+	got, _ := store.Get(d.ID)
+	if got.SyncStatus != SyncStatusFailed || got.SyncError != "connection lost" {
+		t.Errorf("status=%q error=%q", got.SyncStatus, got.SyncError)
+	}
+	if got.IMAPUID != 7 || got.FolderID != folderID {
+		t.Errorf("server copy lost: uid=%d folder=%q", got.IMAPUID, got.FolderID)
+	}
+}

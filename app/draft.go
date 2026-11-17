@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	goImap "github.com/emersion/go-imap/v2"
@@ -44,6 +45,24 @@ type encryptResult struct {
 
 // syncStatusEmitter is a callback for emitting draft sync status changes to a Wails context
 type syncStatusEmitter func(status draft.SyncStatus, imapUID uint32, syncError string)
+
+// draftServerLocks serializes all server work on one draft (upload, replace,
+// delete) within this process (Emailio fix). Without it, an autosave could
+// start while the previous upload was still running, before that upload had
+// recorded where its copy went, and the copy was left behind on the server.
+// It then showed up in the conversation as a duplicate of the sent message.
+var draftServerLocks sync.Map // draft ID -> *sync.Mutex
+
+func lockDraftServer(draftID string) func() {
+	v, _ := draftServerLocks.LoadOrStore(draftID, &sync.Mutex{})
+	mu := v.(*sync.Mutex)
+	mu.Lock()
+	return mu.Unlock
+}
+
+// draftCleanupTimeout bounds removing a just-uploaded copy after its upload
+// was cancelled. The cancelled context can't be used for that cleanup.
+const draftCleanupTimeout = 30 * time.Second
 
 // ============================================================================
 // draftOps — shared draft logic used by both App and ComposerApp
@@ -242,6 +261,12 @@ func (ops *draftOps) saveDraftToDB(accountID string, localDraft *draft.Draft, ms
 func (ops *draftOps) deleteDraftCore(ctx context.Context, d *draft.Draft) (*folder.Folder, error) {
 	log := logging.WithComponent("draft")
 
+	// Wait for any upload of this draft still in progress (it has been asked
+	// to stop and cleans up after itself), so the UID read below is final.
+	unlock := lockDraftServer(d.ID)
+	defer unlock()
+	defer draftServerLocks.Delete(d.ID)
+
 	// Re-read from DB to get latest sync state (IMAPUID may have been updated
 	// by a background sync goroutine since the caller obtained this draft object)
 	if fresh, err := ops.draftStore.Get(d.ID); err == nil && fresh != nil {
@@ -249,7 +274,10 @@ func (ops *draftOps) deleteDraftCore(ctx context.Context, d *draft.Draft) (*fold
 	}
 
 	var draftsFolder *folder.Folder
-	if d.IsSynced() {
+	// Remove the server copy whenever one is recorded, not only when the
+	// status is "synced": a newer autosave marks the draft pending while the
+	// previous copy is still on the server.
+	if d.IMAPUID > 0 {
 		draftsFolder, _ = ops.getSpecialFolder(d.AccountID, folder.TypeDrafts)
 		if draftsFolder != nil {
 			poolConn, err := ops.imapPool.GetConnection(ctx, d.AccountID)
@@ -286,43 +314,70 @@ func (ops *draftOps) deleteDraftCore(ctx context.Context, d *draft.Draft) (*fold
 func (ops *draftOps) syncToIMAP(ctx context.Context, localDraft *draft.Draft, msg smtp.ComposeMessage, emitStatus syncStatusEmitter) *folder.Folder {
 	log := logging.WithComponent("draft")
 
+	// One upload per draft at a time: wait for the previous one to finish (it
+	// has been asked to stop) so it has recorded, or removed, its copy.
+	unlock := lockDraftServer(localDraft.ID)
+	defer unlock()
+	if ctx.Err() != nil {
+		return nil // superseded by a newer save while waiting
+	}
+
+	// Re-read so the old copy deleted below is the one actually recorded now,
+	// not the one known when this save started.
+	current, err := ops.draftStore.Get(localDraft.ID)
+	if err != nil || current == nil {
+		log.Debug().Str("draftID", localDraft.ID).Msg("Draft gone before IMAP sync, skipping")
+		return nil
+	}
+
+	// fail records a failed sync but keeps the record of any server copy, so
+	// the next sync or a delete can still remove it.
+	fail := func(msg string) *folder.Folder {
+		_ = ops.draftStore.MarkSyncFailed(localDraft.ID, msg)
+		emitStatus(draft.SyncStatusFailed, 0, msg)
+		return nil
+	}
+
 	// Find the Drafts folder for this account
 	draftsFolder, err := ops.getSpecialFolder(localDraft.AccountID, folder.TypeDrafts)
 	if err != nil || draftsFolder == nil {
 		log.Warn().Err(err).Str("account_id", localDraft.AccountID).Msg("No drafts folder found, skipping IMAP sync")
-		_ = ops.draftStore.UpdateSyncStatus(localDraft.ID, draft.SyncStatusFailed, 0, "", "no drafts folder found")
-		emitStatus(draft.SyncStatusFailed, 0, "no drafts folder found")
-		return nil
+		return fail("no drafts folder found")
 	}
 
 	// Get IMAP connection from pool
 	poolConn, err := ops.imapPool.GetConnection(ctx, localDraft.AccountID)
 	if err != nil {
 		log.Warn().Err(err).Msg("Failed to get IMAP connection, will retry later")
-		_ = ops.draftStore.UpdateSyncStatus(localDraft.ID, draft.SyncStatusFailed, 0, "", err.Error())
-		emitStatus(draft.SyncStatusFailed, 0, err.Error())
-		return nil
+		return fail(err.Error())
 	}
 	defer ops.imapPool.Release(poolConn)
 
 	conn := poolConn.Client()
 
-	// Delete old IMAP draft if it exists
-	if localDraft.IMAPUID > 0 && localDraft.FolderID != "" {
-		if _, err := conn.SelectMailbox(ctx, draftsFolder.Path); err == nil {
-			if err := conn.DeleteMessageByUID(goImap.UID(localDraft.IMAPUID)); err != nil {
-				log.Warn().Err(err).Uint32("uid", localDraft.IMAPUID).Msg("Failed to delete old draft from IMAP")
+	// Delete the previous server copy. If that fails, don't upload a new one:
+	// it would replace the record of the old copy and leave it behind.
+	if current.IMAPUID > 0 {
+		if _, err := conn.SelectMailbox(ctx, draftsFolder.Path); err != nil {
+			if ctx.Err() != nil {
+				return nil
 			}
+			log.Warn().Err(err).Msg("Failed to select Drafts to replace old draft")
+			return fail(err.Error())
 		}
+		if err := conn.DeleteMessageByUID(goImap.UID(current.IMAPUID)); err != nil {
+			log.Warn().Err(err).Uint32("uid", current.IMAPUID).Msg("Failed to delete old draft from IMAP")
+			return fail(err.Error())
+		}
+		// The old copy is gone; forget it so it isn't deleted twice.
+		_ = ops.draftStore.UpdateSyncStatus(localDraft.ID, draft.SyncStatusPending, 0, "", "")
 	}
 
 	// Build RFC822 message
 	rawMsg, err := msg.ToRFC822()
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to build RFC822 message")
-		_ = ops.draftStore.UpdateSyncStatus(localDraft.ID, draft.SyncStatusFailed, 0, "", err.Error())
-		emitStatus(draft.SyncStatusFailed, 0, err.Error())
-		return nil
+		return fail(err.Error())
 	}
 
 	// The sender's email determines which cert/key to use
@@ -345,9 +400,7 @@ func (ops *draftOps) syncToIMAP(ctx context.Context, localDraft *draft.Draft, ms
 		encryptedMsg, encErr := ops.smimeEncryptor.EncryptMessageToSelf(localDraft.AccountID, fromEmail, rawMsg)
 		if encErr != nil {
 			log.Error().Err(encErr).Msg("Failed to encrypt draft for IMAP sync")
-			_ = ops.draftStore.UpdateSyncStatus(localDraft.ID, draft.SyncStatusFailed, 0, "", encErr.Error())
-			emitStatus(draft.SyncStatusFailed, 0, encErr.Error())
-			return nil
+			return fail(encErr.Error())
 		}
 		rawMsg = encryptedMsg
 		log.Debug().Str("draftID", localDraft.ID).Msg("Draft S/MIME encrypted for IMAP sync")
@@ -368,9 +421,7 @@ func (ops *draftOps) syncToIMAP(ctx context.Context, localDraft *draft.Draft, ms
 		encryptedMsg, encErr := ops.pgpEncryptor.EncryptMessageToSelf(localDraft.AccountID, fromEmail, rawMsg)
 		if encErr != nil {
 			log.Error().Err(encErr).Msg("Failed to PGP encrypt draft for IMAP sync")
-			_ = ops.draftStore.UpdateSyncStatus(localDraft.ID, draft.SyncStatusFailed, 0, "", encErr.Error())
-			emitStatus(draft.SyncStatusFailed, 0, encErr.Error())
-			return nil
+			return fail(encErr.Error())
 		}
 		rawMsg = encryptedMsg
 		log.Debug().Str("draftID", localDraft.ID).Msg("Draft PGP encrypted for IMAP sync")
@@ -393,31 +444,34 @@ func (ops *draftOps) syncToIMAP(ctx context.Context, localDraft *draft.Draft, ms
 	uid, err := conn.AppendMessage(draftsFolder.Path, flags, time.Now(), rawMsg)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to append draft to IMAP")
-		_ = ops.draftStore.UpdateSyncStatus(localDraft.ID, draft.SyncStatusFailed, 0, "", err.Error())
-		emitStatus(draft.SyncStatusFailed, 0, err.Error())
-		return nil
+		return fail(err.Error())
 	}
 
 	// Post-APPEND guard (mirrors the pre-APPEND guards above): if the draft was
 	// cancelled or deleted while we were appending, the just-appended message is
 	// an orphan on the server. Clean it up here so deleteDraftCore doesn't need
 	// to know about UIDs the local DB never recorded.
-	if ctx.Err() != nil {
-		log.Debug().Str("draftID", localDraft.ID).Uint32("uid", uint32(uid)).Msg("Draft cancelled during APPEND, cleaning up orphan")
-		if _, selErr := conn.SelectMailbox(ctx, draftsFolder.Path); selErr == nil {
-			if delErr := conn.DeleteMessageByUID(uid); delErr != nil {
-				log.Warn().Err(delErr).Uint32("uid", uint32(uid)).Msg("Failed to clean up orphan after cancel-during-APPEND")
-			}
+	// The cleanup uses its own context: ctx is already cancelled at this point,
+	// and selecting the mailbox with it always failed, so the orphan was never
+	// removed (Emailio fix).
+	removeOrphan := func(reason string) {
+		log.Debug().Str("draftID", localDraft.ID).Uint32("uid", uint32(uid)).Msg(reason + ", cleaning up orphan")
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), draftCleanupTimeout)
+		defer cancel()
+		if _, selErr := conn.SelectMailbox(cleanupCtx, draftsFolder.Path); selErr != nil {
+			log.Warn().Err(selErr).Uint32("uid", uint32(uid)).Msg("Failed to select Drafts to clean up orphan")
+			return
 		}
+		if delErr := conn.DeleteMessageByUID(uid); delErr != nil {
+			log.Warn().Err(delErr).Uint32("uid", uint32(uid)).Msg("Failed to clean up orphan draft")
+		}
+	}
+	if ctx.Err() != nil {
+		removeOrphan("Draft cancelled during APPEND")
 		return nil
 	}
 	if d, _ := ops.draftStore.Get(localDraft.ID); d == nil {
-		log.Debug().Str("draftID", localDraft.ID).Uint32("uid", uint32(uid)).Msg("Draft deleted during APPEND, cleaning up orphan")
-		if _, selErr := conn.SelectMailbox(ctx, draftsFolder.Path); selErr == nil {
-			if delErr := conn.DeleteMessageByUID(uid); delErr != nil {
-				log.Warn().Err(delErr).Uint32("uid", uint32(uid)).Msg("Failed to clean up orphan after delete-during-APPEND")
-			}
-		}
+		removeOrphan("Draft deleted during APPEND")
 		return nil
 	}
 
