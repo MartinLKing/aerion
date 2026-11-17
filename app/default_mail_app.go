@@ -19,7 +19,11 @@ type DefaultMailAppStatus struct {
 	RegisteredPath string `json:"registeredPath"`
 	// CurrentPath is the program that is running now.
 	CurrentPath string `json:"currentPath"`
-	// UpToDate is true when the registration opens the running program.
+	// MissingICS is true for a registration made before .ics files were
+	// included; registering again adds them.
+	MissingICS bool `json:"missingIcs"`
+	// UpToDate is true when the registration opens the running program and
+	// covers everything Emailio can open.
 	UpToDate bool `json:"upToDate"`
 }
 
@@ -34,7 +38,9 @@ func (a *App) GetDefaultMailAppStatus() DefaultMailAppStatus {
 	if exe, err := os.Executable(); err == nil {
 		status.CurrentPath = exe
 	}
-	status.UpToDate = status.Registered && strings.EqualFold(status.RegisteredPath, status.CurrentPath)
+	status.MissingICS = status.Registered && !platform.MailClientHandlesICS()
+	status.UpToDate = status.Registered && !status.MissingICS &&
+		strings.EqualFold(status.RegisteredPath, status.CurrentPath)
 	return status
 }
 

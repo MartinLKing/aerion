@@ -27,6 +27,9 @@ const (
 	mailClientCapsKey   = mailClientKey + `\Capabilities`
 	mailtoProgID        = mailClientName + "Mailto"
 	mailtoProgIDKey     = `Software\Classes\` + mailtoProgID
+	icsProgID           = mailClientName + "ICS"
+	icsProgIDKey        = `Software\Classes\` + icsProgID
+	icsOpenWithKey      = `Software\Classes\.ics\OpenWithProgids`
 	registeredAppsKey   = `Software\RegisteredApplications`
 	mailClientCommandSz = `"%s" "%%1"`
 )
@@ -56,6 +59,12 @@ func RegisterMailClient() error {
 		{mailtoProgIDKey, "URL Protocol", ""},
 		{mailtoProgIDKey + `\DefaultIcon`, "", icon},
 		{mailtoProgIDKey + `\shell\open\command`, "", command},
+		// .ics calendar files open in the event form (Emailio)
+		{mailClientCapsKey + `\FileAssociations`, ".ics", icsProgID},
+		{icsProgIDKey, "", "iCalendar file"},
+		{icsProgIDKey + `\DefaultIcon`, "", icon},
+		{icsProgIDKey + `\shell\open\command`, "", command},
+		{icsOpenWithKey, icsProgID, ""},
 		{registeredAppsKey, mailClientName, mailClientCapsKey},
 	}
 	for _, v := range values {
@@ -76,7 +85,11 @@ func UnregisterMailClient() error {
 		_ = key.DeleteValue(mailClientName)
 		key.Close()
 	}
-	for _, path := range []string{mailClientKey, mailtoProgIDKey} {
+	if key, err := registry.OpenKey(registry.CURRENT_USER, icsOpenWithKey, registry.SET_VALUE); err == nil {
+		_ = key.DeleteValue(icsProgID)
+		key.Close()
+	}
+	for _, path := range []string{mailClientKey, mailtoProgIDKey, icsProgIDKey} {
 		if err := deleteUserKeyTree(path); err != nil {
 			return err
 		}
@@ -85,6 +98,17 @@ func UnregisterMailClient() error {
 	log := logging.WithComponent("mailclient")
 	log.Info().Msg("Removed mail app registration for the current user")
 	return nil
+}
+
+// MailClientHandlesICS reports whether the registration includes .ics files
+// (registrations made before that was added don't).
+func MailClientHandlesICS() bool {
+	key, err := registry.OpenKey(registry.CURRENT_USER, icsProgIDKey+`\shell\open\command`, registry.QUERY_VALUE)
+	if err != nil {
+		return false
+	}
+	key.Close()
+	return true
 }
 
 // MailClientRegistration returns the program path the current user's

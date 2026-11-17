@@ -436,6 +436,7 @@ export namespace app {
 	    registered: boolean;
 	    registeredPath: string;
 	    currentPath: string;
+	    missingIcs: boolean;
 	    upToDate: boolean;
 	
 	    static createFrom(source: any = {}) {
@@ -448,6 +449,7 @@ export namespace app {
 	        this.registered = source["registered"];
 	        this.registeredPath = source["registeredPath"];
 	        this.currentPath = source["currentPath"];
+	        this.missingIcs = source["missingIcs"];
 	        this.upToDate = source["upToDate"];
 	    }
 	}
@@ -505,6 +507,38 @@ export namespace app {
 	        this.minAerionVersion = source["minAerionVersion"];
 	        this.capabilities = source["capabilities"];
 	        this.enabled = source["enabled"];
+	    }
+	}
+	export class ICSEvent {
+	    fileName: string;
+	    summary: string;
+	    location: string;
+	    description: string;
+	    startUnix: number;
+	    endUnix: number;
+	    allDay: boolean;
+	    organizerName: string;
+	    organizerEmail: string;
+	    recurring: boolean;
+	    eventCount: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ICSEvent(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.fileName = source["fileName"];
+	        this.summary = source["summary"];
+	        this.location = source["location"];
+	        this.description = source["description"];
+	        this.startUnix = source["startUnix"];
+	        this.endUnix = source["endUnix"];
+	        this.allDay = source["allDay"];
+	        this.organizerName = source["organizerName"];
+	        this.organizerEmail = source["organizerEmail"];
+	        this.recurring = source["recurring"];
+	        this.eventCount = source["eventCount"];
 	    }
 	}
 	export class LinkedAccountInfo {

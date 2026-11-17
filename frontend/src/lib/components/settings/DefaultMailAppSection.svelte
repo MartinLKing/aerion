@@ -20,10 +20,15 @@
     registered: boolean
     registeredPath: string
     currentPath: string
+    missingIcs: boolean
     upToDate: boolean
   }
 
   let status = $state<Status | null>(null)
+
+  const samePath = $derived(
+    !!status && status.registeredPath.toLowerCase() === status.currentPath.toLowerCase(),
+  )
   let busy = $state(false)
 
   async function refresh() {
@@ -69,6 +74,9 @@
         {#if status.upToDate}
           <Icon icon="mdi:check-circle" class="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
           <span>{$_('settingsGeneral.defaultMailApp.registered')}</span>
+        {:else if status.registered && samePath && status.missingIcs}
+          <Icon icon="mdi:alert" class="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+          <span>{$_('settingsGeneral.defaultMailApp.needsIcs')}</span>
         {:else if status.registered}
           <Icon icon="mdi:alert" class="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
           <span class="min-w-0">
@@ -85,7 +93,9 @@
         {#if !status.upToDate}
           <Button size="sm" disabled={busy} onclick={() => run(RegisterAsMailApp, 'settingsGeneral.defaultMailApp.registeredToast')}>
             <Icon icon="mdi:email-check-outline" class="w-4 h-4 mr-1" />
-            {$_(status.registered ? 'settingsGeneral.defaultMailApp.useThisCopy' : 'settingsGeneral.defaultMailApp.register')}
+            {$_(!status.registered
+              ? 'settingsGeneral.defaultMailApp.register'
+              : samePath ? 'settingsGeneral.defaultMailApp.update' : 'settingsGeneral.defaultMailApp.useThisCopy')}
           </Button>
         {:else}
           <Button size="sm" variant="outline" disabled={busy} onclick={() => run(OpenDefaultAppsSettings, 'settingsGeneral.defaultMailApp.openedToast')}>

@@ -128,7 +128,8 @@ func (l *darwinSingleInstanceLock) handleConnection(conn net.Conn) {
 
 	cmd := scanner.Text()
 	// Command allowlist: only accept "show" or "mailto:..." — reject everything else
-	if cmd != "show" && !strings.HasPrefix(cmd, "mailto:") {
+	// Emailio: "ics:<path>" asks the running instance to open an .ics file.
+	if cmd != "show" && !strings.HasPrefix(cmd, "mailto:") && !strings.HasPrefix(cmd, "ics:") {
 		log.Warn().Str("cmd", cmd).Msg("Rejected unknown command from second instance")
 		return
 	}

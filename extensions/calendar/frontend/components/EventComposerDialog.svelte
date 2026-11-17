@@ -49,6 +49,7 @@
     defaultAllDay?: boolean
     initialSummary?: string
     initialDescriptionHTML?: string
+    initialLocation?: string
     /** Short note shown under the title, such as where the prefill came from */
     notice?: string
     onClose?: () => void
@@ -66,6 +67,7 @@
     defaultAllDay = false,
     initialSummary = '',
     initialDescriptionHTML = '',
+    initialLocation = '',
     notice = '',
     onClose,
     onSaved,
@@ -430,7 +432,7 @@
     endRef.setHours(endRef.getHours() + 1)
     if (defaultEnd && defaultEnd > ref) endRef = toZonedTime(defaultEnd, tz)
     summary = initialSummary
-    location = ''
+    location = initialLocation
     descriptionHTML = initialDescriptionHTML
     description = initialDescriptionHTML ? htmlToPlainText(initialDescriptionHTML) : ''
     transparency = 'busy'

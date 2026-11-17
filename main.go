@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/hkdb/aerion/app"
@@ -110,19 +111,33 @@ func main() {
 		}
 	}
 
+	// An .ics file to add to the calendar (Emailio), e.g. opened from Explorer
+	var icsPath string
+	for _, arg := range args {
+		if app.IsICSPath(arg) {
+			if abs, err := filepath.Abs(arg); err == nil {
+				icsPath = abs
+			}
+			break
+		}
+	}
+
 	if *composeMode {
 		runComposerMode()
 		return
 	}
-	runMainMode(mailtoData, rawMailtoArg)
+	runMainMode(mailtoData, rawMailtoArg, icsPath)
 }
 
 // runMainMode runs the main application window
-func runMainMode(mailtoData *app.MailtoData, rawMailtoArg string) {
+func runMainMode(mailtoData *app.MailtoData, rawMailtoArg string, icsPath string) {
 	// Determine activation message: pass raw mailto URL if present, otherwise just "show"
 	activateMsg := "show"
 	if rawMailtoArg != "" {
 		activateMsg = rawMailtoArg
+	}
+	if icsPath != "" {
+		activateMsg = app.ICSCommandPrefix + icsPath
 	}
 
 	// Single-instance detection: if another instance is running, activate it and exit
@@ -167,6 +182,7 @@ func runMainMode(mailtoData *app.MailtoData, rawMailtoArg string) {
 	if mailtoData != nil {
 		application.PendingMailto = mailtoData
 	}
+	application.PendingICSPath = icsPath
 
 	// Run pre-Wails startup checks (paths, DB open, migrations, credential
 	// store). On failure, surface a native error dialog and exit before the

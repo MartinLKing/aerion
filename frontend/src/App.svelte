@@ -9,6 +9,7 @@
   import ConversationViewer from './lib/components/viewer/ConversationViewer.svelte'
   import Composer from './lib/components/composer/Composer.svelte'
   import ToastContainer from './lib/components/ui/toast/ToastContainer.svelte'
+  import IcsOpenHandler from './lib/components/calendar/IcsOpenHandler.svelte'
   import SpellSuggestionMenu from './lib/spellcheck/SpellSuggestionMenu.svelte'
   import TermsDialog from './lib/components/TermsDialog.svelte'
   import OAuthMissingDialog from './lib/components/OAuthMissingDialog.svelte'
@@ -1725,6 +1726,7 @@
 
 <!-- Toast notifications -->
 <ToastContainer />
+<IcsOpenHandler />
 
 <!-- Spellcheck right-click suggestion menu (composer) -->
 <SpellSuggestionMenu />

@@ -355,6 +355,8 @@ export function GetPGPKeyServers():Promise<Array<pgp.KeyServer>>;
 
 export function GetPGPSignPolicy(arg1:string):Promise<string>;
 
+export function GetPendingICS():Promise<app.ICSEvent>;
+
 export function GetPendingMailto():Promise<app.MailtoData>;
 
 export function GetReadReceiptResponsePolicy():Promise<string>;

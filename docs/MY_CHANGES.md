@@ -205,3 +205,13 @@ Settings → General → Default email app makes Emailio available in Windows Se
 - "Remove" deletes the entries again.
 - Only `mailto` for now. Opening `.ics` and `.eml` files would need Emailio to handle file arguments first.
 - New: `internal/platform/mailclient_windows.go` (stub for other systems in `mailclient_other.go`), `app/default_mail_app.go`, `frontend/src/lib/components/settings/DefaultMailAppSection.svelte`.
+
+## Open .ics calendar files
+
+Opening an `.ics` file (an invitation, or one saved from a website) shows the event in the calendar's new-event form, filled in with title, date and time, location, organizer and description. Pick the calendar and press Save. This also works for `.ics` attachments opened from an email, and when Emailio is already running.
+
+- Settings → General → Default email app now registers `.ics` as well as MAILTO. An existing registration shows "Update and open Default apps"; after updating, choose Emailio for `.ics` in Windows Default apps.
+- Limits: only the first event in a file is used, a repeating event is added once, and nothing is sent back to the organizer (no accept/decline reply). The form's note says when the first two apply.
+- All-day events: `.ics` files end them on the day after; the form's end date is the last day, so one day is taken off.
+- Files over 1 MB are refused.
+- New: `app/ics_open.go` (with tests, uses the calendar's existing `.ics` reader), `frontend/src/lib/components/calendar/IcsOpenHandler.svelte`. The event form gained an `initialLocation` prefill. The three single-instance files accept an `ics:<path>` command so a running Emailio can be handed a file.

@@ -14,4 +14,5 @@ var errMailClientUnsupported = errors.New("platform: mail app registration is wi
 func RegisterMailClient() error      { return errMailClientUnsupported }
 func UnregisterMailClient() error    { return errMailClientUnsupported }
 func MailClientRegistration() string { return "" }
+func MailClientHandlesICS() bool      { return false }
 func OpenDefaultAppsSettings() error { return errMailClientUnsupported }

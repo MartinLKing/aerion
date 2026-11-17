@@ -670,6 +670,10 @@ export function GetPGPSignPolicy(arg1) {
   return window['go']['app']['App']['GetPGPSignPolicy'](arg1);
 }
 
+export function GetPendingICS() {
+  return window['go']['app']['App']['GetPendingICS']();
+}
+
 export function GetPendingMailto() {
   return window['go']['app']['App']['GetPendingMailto']();
 }

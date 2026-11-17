@@ -305,6 +305,9 @@ type App struct {
 	// Pending mailto: URL data (from command line)
 	PendingMailto *MailtoData
 
+	// Pending .ics file path (from command line, Emailio)
+	PendingICSPath string
+
 	// Full-text search indexer
 	ftsIndexer *message.FTSIndexer
 
@@ -517,6 +520,10 @@ func (a *App) Startup(ctx context.Context) {
 		a.SingleInstanceLock.SetOnShow(func(data string) {
 			if strings.HasPrefix(data, "mailto:") {
 				a.handleExternalMailto(data)
+				return
+			}
+			if strings.HasPrefix(data, ICSCommandPrefix) {
+				a.handleExternalICS(strings.TrimPrefix(data, ICSCommandPrefix))
 				return
 			}
 			a.ShowWindow()
