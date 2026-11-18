@@ -1666,17 +1666,19 @@
                       <span class="text-sm text-muted-foreground">
                         {formatDate(msg.date)}
                       </span>
-                      {#if isDraftsFolder && (msg.isDraft || msg.folderId === folderId)}
+                      {#if msg.isDraft || (isDraftsFolder && msg.folderId === folderId)}
                         <!-- Per-message gate (#392): Drafts-folder threads include
                              Sent siblings for context, which must not get the edit
-                             pencil. isDraft = \Draft flag; the folderId fallback
-                             covers servers that don't stamp it. -->
+                             button. isDraft = \Draft flag; the folderId fallback
+                             covers servers that don't stamp it. Emailio: shown on
+                             drafts in any conversation, as a labelled button. -->
                         <button
-                          class="p-1 rounded hover:bg-muted transition-colors"
+                          class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded border border-primary/50 text-primary hover:bg-primary/10 transition-colors"
                           title={$_('viewer.editDraft')}
                           onclick={(e) => { e.stopPropagation(); onEditDraft?.(msg.id) }}
                         >
-                          <Icon icon="mdi:pencil" class="w-4 h-4 text-muted-foreground" />
+                          <Icon icon="mdi:pencil" class="w-3.5 h-3.5" />
+                          {$_('viewer.editDraft')}
                         </button>
                       {/if}
                       <button

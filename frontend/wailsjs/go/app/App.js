@@ -990,6 +990,10 @@ export function OpenDefaultAppsSettings() {
   return window['go']['app']['App']['OpenDefaultAppsSettings']();
 }
 
+export function OpenDraftForEdit(arg1) {
+  return window['go']['app']['App']['OpenDraftForEdit'](arg1);
+}
+
 export function OpenEncryptedAttachment(arg1, arg2) {
   return window['go']['app']['App']['OpenEncryptedAttachment'](arg1, arg2);
 }

@@ -40,6 +40,7 @@
     folderType?: string
     onConversationSelect?: (threadId: string, folderId: string, accountId: string) => void
     onReply?: (mode: 'reply' | 'reply-all' | 'forward', messageId: string) => void
+    onEditDraft?: (messageId: string) => void
     onRowActionComplete?: () => void
     isFocused?: boolean
     isFlashing?: boolean
@@ -54,6 +55,7 @@
     folderType = 'inbox',
     onConversationSelect,
     onReply,
+    onEditDraft,
     onRowActionComplete,
     isFocused: _isFocused = false,
     isFlashing = false,
@@ -1939,6 +1941,7 @@
           onActionComplete={handleActionComplete}
           {onReply}
           onDelete={(ids) => requestDelete(ids)}
+          onOpen={folderType === 'drafts' && conv.messageIds?.length ? () => onEditDraft?.(conv.messageIds[0]) : undefined}
         />
       {/each}
 

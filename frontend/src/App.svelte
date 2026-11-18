@@ -44,7 +44,7 @@
   import { dispatchExtensionShortcut } from '$lib/stores/extensionShortcuts.svelte'
   import { initLayout, getLayoutMode, getResponsiveView, showViewer, hideViewer, showSidebar, hideSidebar, isResponsive } from '$lib/stores/layout.svelte'
   // @ts-ignore - wailsjs path
-  import { PrepareReply, GetPendingMailto, GetDraft, MarkAsRead, MarkAsUnread, Star, Unstar, Archive, MarkAsSpam, MarkAsNotSpam, Undo, GetTermsAccepted, SetTermsAccepted, RefreshWindowConstraints, AcceptCertificate, GetStartHiddenActive, CloseWindow, QuitApp, OpenComposerWindow, GetSystemTheme, NotifyStartupComplete, GetOAuthBuildStatus, GetOAuthWarningDisabled, SetOAuthWarningDisabled, GetLastSeenVersion, SetLastSeenVersion, GetAppInfo } from '../wailsjs/go/app/App.js'
+  import { PrepareReply, GetPendingMailto, OpenDraftForEdit, MarkAsRead, MarkAsUnread, Star, Unstar, Archive, MarkAsSpam, MarkAsNotSpam, Undo, GetTermsAccepted, SetTermsAccepted, RefreshWindowConstraints, AcceptCertificate, GetStartHiddenActive, CloseWindow, QuitApp, OpenComposerWindow, GetSystemTheme, NotifyStartupComplete, GetOAuthBuildStatus, GetOAuthWarningDisabled, SetOAuthWarningDisabled, GetLastSeenVersion, SetLastSeenVersion, GetAppInfo } from '../wailsjs/go/app/App.js'
   // @ts-ignore - wailsjs path
   import { smtp, folder, certificate } from '../wailsjs/go/models'
   // @ts-ignore - wailsjs runtime
@@ -662,19 +662,24 @@
     showComposer = true
   }
 
-  // Handle edit draft (opens composer with existing draft)
-  async function handleEditDraft(draftId: string) {
-    // Use conversation's account ID, fall back to selected account or first account
-    const accountId = resolveAccountId(selectedConversationAccountId) || resolveAccountId(selectedAccountId)
-    if (!accountId) return
-
+  // Handle edit draft (opens composer with existing draft).
+  // Emailio: id may be a Drafts-folder message ID; OpenDraftForEdit resolves
+  // it to the real draft (taking over drafts written elsewhere), so autosave
+  // replaces it and sending removes it from Drafts.
+  async function handleEditDraft(id: string) {
     try {
-      // Load the draft content from backend
-      const draftMessage = await GetDraft(draftId)
+      const editable = await OpenDraftForEdit(id)
+      const accountId = editable.accountId || resolveAccountId(selectedConversationAccountId) || resolveAccountId(selectedAccountId)
+      if (!accountId) return
+
+      if (getComposerMode() === 'detached' || focusMode !== 'off') {
+        OpenComposerWindow(accountId, 'new', '', editable.draftId, '')
+        return
+      }
 
       composerAccountId = accountId
-      composerInitialMessage = draftMessage || null
-      composerDraftId = draftId
+      composerInitialMessage = editable.message || null
+      composerDraftId = editable.draftId
       showComposer = true
     } catch (err) {
       console.error('Failed to load draft:', err)
@@ -757,8 +762,9 @@
     const accountId = resolveAccountId(selectedConversationAccountId) || resolveAccountId(selectedAccountId)
     if (!accountId) return
 
-    // Force detached composer when in focus mode — preserves the focused view
-    if (focusMode !== 'off') {
+    // Force detached composer when in focus mode — preserves the focused view.
+    // Emailio: also when the composer mode setting is "separate window".
+    if (focusMode !== 'off' || getComposerMode() === 'detached') {
       OpenComposerWindow(accountId, mode, messageId, '', '')
       return
     }
@@ -1667,6 +1673,7 @@
         folderType={selectedFolderType || 'inbox'}
         onConversationSelect={handleConversationSelect}
         onReply={handleReply}
+        onEditDraft={handleEditDraft}
         onRowActionComplete={() => viewerRef?.refreshFlags()}
         isFocused={getFocusedPane() === 'messageList'}
         isFlashing={isPaneFlashing('messageList')}

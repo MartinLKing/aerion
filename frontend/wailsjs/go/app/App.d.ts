@@ -515,6 +515,8 @@ export function OpenComposerWindow(arg1:string,arg2:string,arg3:string,arg4:stri
 
 export function OpenDefaultAppsSettings():Promise<void>;
 
+export function OpenDraftForEdit(arg1:string):Promise<app.EditableDraft>;
+
 export function OpenEncryptedAttachment(arg1:string,arg2:string):Promise<void>;
 
 export function OpenFile(arg1:string):Promise<void>;

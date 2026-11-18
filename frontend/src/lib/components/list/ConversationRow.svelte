@@ -50,6 +50,7 @@
     onActionComplete?: (autoSelectNext?: boolean) => void
     onReply?: (mode: 'reply' | 'reply-all' | 'forward', messageId: string) => void
     onDelete?: (messageIds: string[]) => void  // Swipe-left delete (routes through MessageList.requestDelete)
+    onOpen?: () => void  // Double-click (Emailio: opens a draft for editing)
   }
 
   let {
@@ -78,6 +79,7 @@
     onActionComplete,
     onReply,
     onDelete,
+    onOpen,
   }: Props = $props()
 
   // Check if we're in search mode (have highlighted content)
@@ -464,6 +466,7 @@
       ? 'bg-primary/20'
       : 'hover:bg-muted/50'} {getAccentBarUnread() && hasUnread && getAccentUnreadStyle() === 'bar' ? 'border-l-2 border-l-primary' : ''} {swipeAnim === 'select' ? 'swipe-select-anim' : ''} {swipeAnim === 'delete' ? 'swipe-delete-anim' : ''}"
     onclick={handleRowClick}
+    ondblclick={(e) => { if (onOpen) { e.preventDefault(); onOpen() } }}
     onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect() }}}
     ondragstart={handleDragStart}
     ontouchstart={handleTouchStart}

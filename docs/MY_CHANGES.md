@@ -215,3 +215,12 @@ Opening an `.ics` file (an invitation, or one saved from a website) shows the ev
 - All-day events: `.ics` files end them on the day after; the form's end date is the last day, so one day is taken off.
 - Files over 1 MB are refused.
 - New: `app/ics_open.go` (with tests, uses the calendar's existing `.ics` reader), `frontend/src/lib/components/calendar/IcsOpenHandler.svelte`. The event form gained an `initialLocation` prefill. The three single-instance files accept an `ics:<path>` command so a running Emailio can be handed a file.
+
+## Edit and send drafts; separate-window composer for replies
+
+**Editing a draft now edits that draft.** Opening a draft used to hand the composer the message's ID instead of the draft's, so the first autosave made a new draft and sending deleted nothing: the original stayed in Drafts forever. `OpenDraftForEdit` (`app/draft_edit.go`, with tests) now resolves the real draft. A draft written elsewhere (Gmail web, phone) is taken over: Emailio makes a local draft pointing at the copy on the server, so autosave replaces it and sending removes it. Its body and attachments are fetched if needed.
+
+- The small pencil is now a labelled **Edit draft** button, shown on drafts in any conversation, not only in the Drafts folder.
+- Double-clicking a conversation in the Drafts folder opens it for editing.
+
+**Separate window.** With Settings → Composer → composer mode set to separate window, replies, reply-all, forwards and draft edits now open in their own window too. Upstream only did this for new messages, so replies always used the overlay that blocks the main window.
