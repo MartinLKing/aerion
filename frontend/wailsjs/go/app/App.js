@@ -470,6 +470,10 @@ export function GetContactPhotos(arg1) {
   return window['go']['app']['App']['GetContactPhotos'](arg1);
 }
 
+export function GetContactSavedState(arg1) {
+  return window['go']['app']['App']['GetContactSavedState'](arg1);
+}
+
 export function GetContactSource(arg1) {
   return window['go']['app']['App']['GetContactSource'](arg1);
 }
@@ -1116,6 +1120,10 @@ export function SaveAllEncryptedAttachments(arg1) {
 
 export function SaveAttachmentAs(arg1) {
   return window['go']['app']['App']['SaveAttachmentAs'](arg1);
+}
+
+export function SaveContact(arg1, arg2) {
+  return window['go']['app']['App']['SaveContact'](arg1, arg2);
 }
 
 export function SaveDraft(arg1, arg2, arg3) {

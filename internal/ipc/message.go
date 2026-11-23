@@ -17,6 +17,9 @@ const (
 	// TypeDraftDeleted indicates a draft was deleted
 	TypeDraftDeleted = "draft_deleted"
 
+	// TypeContactsChanged indicates a contact was saved (Emailio)
+	TypeContactsChanged = "contacts_changed"
+
 	// TypeComposerReady indicates the composer finished loading
 	TypeComposerReady = "composer_ready"
 

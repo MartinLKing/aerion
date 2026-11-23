@@ -234,3 +234,13 @@ Recipient suggestions list the person you emailed last first; how often you emai
 - An open Contacts view reloads after a send or when contacts were learned.
 - New: `app/contact_collect.go`, `internal/contact/sent.go`, `internal/message/sent_recipients.go`, with tests. Changed: ranking in `internal/contact/store.go`. No database table changes.
 - `TestMSSidecar_*` in `extensions/contacts/backend` fail on Windows with or without this change (a temp file is still open at cleanup).
+
+## Save a contact from an email; recipient addresses always shown
+
+Recipients in the composer show the name and the address, so it is clear which of someone's addresses is used. Each has an icon that saves the address as a contact or renames it; the same icon is next to the sender when reading.
+
+- Outline icon: not saved yet (including automatically collected). Filled icon: saved, click to rename. Contacts from a synced address book count as saved and are not changed here. Own addresses have no icon.
+- Saving a collected contact makes it a regular one and protects its name from later mail. Contacts stay in Emailio only.
+- A name saved in the composer is also used in the email being written. A save in a pop-out composer refreshes the main window (`contacts_changed` IPC message).
+- New: `internal/contact/saved.go` (with tests), `app/contact_save.go`, `SaveContactButton.svelte`, `contactSaves.svelte.ts`.
+- Bindings can be generated while Emailio is open by pointing APPDATA at an empty folder for that command; the generator otherwise finds the running copy and writes nothing.

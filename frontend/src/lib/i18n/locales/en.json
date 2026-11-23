@@ -527,6 +527,13 @@
     "added": "Event added to your calendar",
     "failed": "Couldn't open the calendar file {file}: {error}"
   },
+  "saveContact": {
+    "save": "Save contact",
+    "rename": "Rename contact",
+    "synced": "Already in a synced address book",
+    "name": "Name",
+    "done": "Contact saved"
+  },
   "addToCalendar": {
     "button": "Add to calendar",
     "from": "From",

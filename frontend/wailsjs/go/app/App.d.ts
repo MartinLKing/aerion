@@ -255,6 +255,8 @@ export function GetContact(arg1:string):Promise<contact.Contact>;
 
 export function GetContactPhotos(arg1:Array<string>):Promise<Array<contact.ContactPhoto>>;
 
+export function GetContactSavedState(arg1:string):Promise<contact.SavedState>;
+
 export function GetContactSource(arg1:string):Promise<carddav.Source>;
 
 export function GetContactSourceErrors():Promise<Array<carddav.SourceError>>;
@@ -578,6 +580,8 @@ export function SaveAllAttachments(arg1:string):Promise<string>;
 export function SaveAllEncryptedAttachments(arg1:string):Promise<string>;
 
 export function SaveAttachmentAs(arg1:string):Promise<string>;
+
+export function SaveContact(arg1:string,arg2:string):Promise<void>;
 
 export function SaveDraft(arg1:string,arg2:smtp.ComposeMessage,arg3:string):Promise<app.DraftResult>;
 

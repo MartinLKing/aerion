@@ -1802,6 +1802,20 @@ export namespace contact {
 	        this.mediaType = source["mediaType"];
 	    }
 	}
+	export class SavedState {
+	    state: string;
+	    name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SavedState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.state = source["state"];
+	        this.name = source["name"];
+	    }
+	}
 
 }
 

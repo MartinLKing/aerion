@@ -34,6 +34,10 @@ export function GetComposeMode() {
   return window['go']['app']['ComposerApp']['GetComposeMode']();
 }
 
+export function GetContactSavedState(arg1) {
+  return window['go']['app']['ComposerApp']['GetContactSavedState'](arg1);
+}
+
 export function GetDarkComposerBody() {
   return window['go']['app']['ComposerApp']['GetDarkComposerBody']();
 }
@@ -168,6 +172,10 @@ export function ReadFileAsAttachment(arg1) {
 
 export function RefreshWindowConstraints() {
   return window['go']['app']['ComposerApp']['RefreshWindowConstraints']();
+}
+
+export function SaveContact(arg1, arg2) {
+  return window['go']['app']['ComposerApp']['SaveContact'](arg1, arg2);
 }
 
 export function SaveDraft(arg1, arg2, arg3) {

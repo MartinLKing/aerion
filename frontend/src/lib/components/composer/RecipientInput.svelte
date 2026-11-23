@@ -10,6 +10,7 @@
   import Icon from '@iconify/svelte'
   // @ts-ignore - Wails generated imports
   import { smtp, contact } from '../../../../wailsjs/go/models'
+  import SaveContactButton from '$lib/components/common/SaveContactButton.svelte'
   import { type ComposerApi, COMPOSER_API_KEY, createMainWindowApi } from '$lib/composerApi'
 
   interface Props {
@@ -140,6 +141,17 @@
       suggestions = []
       showSuggestions = false
     }
+  }
+
+  // A saved contact's name is also used in the email being written
+  function renameRecipient(address: string, name: string) {
+    recipients = recipients.map((r) =>
+      addressOf(r).toLowerCase() === address.toLowerCase() ? new smtp.Address({ name, address }) : r,
+    )
+  }
+
+  function addressOf(r: smtp.Address): string {
+    return r.address || (r as any).email || ''
   }
 
   function removeRecipient(index: number) {
@@ -302,13 +314,21 @@
         ondrop={(e) => handleDrop(e, index)}
         class="flex items-center gap-1 px-2 py-0.5 bg-muted rounded-md text-sm transition-opacity cursor-grab {draggingIndex === index ? 'opacity-50' : ''} {dropTargetIndex === index ? 'border-l-2 border-primary -ml-0.5 pl-[7px]' : ''}"
       >
-        <span>
-          {#if recipient.name}
-            {recipient.name}
-          {:else}
-            {recipient.address || (recipient as any).email || ''}
-          {/if}
-        </span>
+        <!-- Emailio: the address is always shown; the name shortens first -->
+        {#if recipient.name && recipient.name.toLowerCase() !== addressOf(recipient).toLowerCase()}
+          <span class="truncate max-w-[12rem]" title={recipient.name}>{recipient.name}</span>
+          <span class="text-muted-foreground break-all">&lt;{addressOf(recipient)}&gt;</span>
+        {:else}
+          <span class="break-all">{addressOf(recipient)}</span>
+        {/if}
+        {#if addressOf(recipient)}
+          <SaveContactButton
+            email={addressOf(recipient)}
+            name={recipient.name}
+            {api}
+            onSaved={(name) => renameRecipient(addressOf(recipient), name)}
+          />
+        {/if}
         <button
           onclick={() => removeRecipient(index)}
           class="text-muted-foreground hover:text-foreground"

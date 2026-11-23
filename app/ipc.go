@@ -85,6 +85,9 @@ func (a *App) handleIPCMessage(clientID string, msg ipc.Message) {
 		}
 		a.handleComposerDraftDeleted(payload)
 
+	case ipc.TypeContactsChanged:
+		a.emitContactsChanged()
+
 	case ipc.TypeComposerReady:
 		log.Info().Str("clientID", clientID).Msg("Composer window ready")
 

@@ -23,6 +23,12 @@ export interface ComposerApi {
   /** Search contacts for autocomplete */
   searchContacts: (query: string, limit: number) => Promise<contact.Contact[]>
 
+  /** Whether an address is a contact: none, collected, saved, synced or own */
+  getContactSavedState: (email: string) => Promise<contact.SavedState>
+
+  /** Save an address as a local contact, or rename it */
+  saveContact: (email: string, name: string) => Promise<void>
+
   /** Get identities for an account */
   getIdentities: (accountId: string) => Promise<account.Identity[]>
 
@@ -151,6 +157,16 @@ export function createMainWindowApi(): ComposerApi {
     searchContacts: async (query: string, limit: number) => {
       const { SearchContacts } = await import('../../wailsjs/go/app/App.js')
       return SearchContacts(query, limit) || []
+    },
+
+    getContactSavedState: async (email: string) => {
+      const { GetContactSavedState } = await import('../../wailsjs/go/app/App.js')
+      return GetContactSavedState(email)
+    },
+
+    saveContact: async (email: string, name: string) => {
+      const { SaveContact } = await import('../../wailsjs/go/app/App.js')
+      return SaveContact(email, name)
     },
 
     getIdentities: async (accountId: string) => {
@@ -335,6 +351,16 @@ export function createComposerWindowApi(_accountId: string): ComposerApi {
     searchContacts: async (query: string, limit: number) => {
       const { SearchContacts } = await import('../../wailsjs/go/app/ComposerApp.js')
       return SearchContacts(query, limit) || []
+    },
+
+    getContactSavedState: async (email: string) => {
+      const { GetContactSavedState } = await import('../../wailsjs/go/app/ComposerApp.js')
+      return GetContactSavedState(email)
+    },
+
+    saveContact: async (email: string, name: string) => {
+      const { SaveContact } = await import('../../wailsjs/go/app/ComposerApp.js')
+      return SaveContact(email, name)
     },
 
     getIdentities: async (accountId: string) => {

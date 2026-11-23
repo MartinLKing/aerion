@@ -15,6 +15,8 @@
   // @ts-ignore - wailsjs path
   import { message as messageModels } from '../../../../wailsjs/go/models'
   import AttachmentList from './AttachmentList.svelte'
+  import SaveContactButton from '$lib/components/common/SaveContactButton.svelte'
+  import { createMainWindowApi } from '$lib/composerApi'
   import EmailBody from './EmailBody.svelte'
   import { toasts } from '$lib/stores/toast'
   import { setFocusedPane, isInputElement, isComposerOpen } from '$lib/stores/keyboard.svelte'
@@ -1166,6 +1168,8 @@
   // Computed: is this the Trash folder?
   const isTrashFolder = $derived(folderType === 'trash')
 
+  const contactApi = createMainWindowApi()
+
   // Computed: is this the Drafts folder?
   const isDraftsFolder = $derived(folderType === 'drafts')
 
@@ -1564,6 +1568,9 @@
                         onclick={(e) => { e.stopPropagation(); copyToClipboard(formatEmailForCopy(msg.fromName, msg.fromEmail), $_('viewer.from')) }}
                         onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); copyToClipboard(formatEmailForCopy(msg.fromName, msg.fromEmail), $_('viewer.from')) }}}
                       >&lt;{msg.fromEmail}&gt;</span>
+                      {#if msg.fromEmail}
+                        <SaveContactButton email={msg.fromEmail} name={msg.fromName} api={contactApi} />
+                      {/if}
 
                       <!-- Unread indicator -->
                       {#if !msg.isRead}
