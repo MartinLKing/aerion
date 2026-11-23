@@ -1661,6 +1661,7 @@
                       {#key msg.bodyFetched}
                         <AttachmentList
                           messageId={msg.id}
+                          bodyHtml={pgpResults[msg.id]?.bodyHtml ?? smimeResults[msg.id]?.bodyHtml ?? msg.bodyHtml}
                           encryptedAttachments={pgpResults[msg.id]?.attachments ?? smimeResults[msg.id]?.attachments}
                         />
                       {/key}

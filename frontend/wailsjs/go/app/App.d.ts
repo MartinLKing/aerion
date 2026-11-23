@@ -575,9 +575,9 @@ export function ReorderAccounts(arg1:Array<string>):Promise<void>;
 
 export function RunFilterRule(arg1:string):Promise<number>;
 
-export function SaveAllAttachments(arg1:string):Promise<string>;
+export function SaveAllAttachments(arg1:string,arg2:Array<string>):Promise<string>;
 
-export function SaveAllEncryptedAttachments(arg1:string):Promise<string>;
+export function SaveAllEncryptedAttachments(arg1:string,arg2:Array<string>):Promise<string>;
 
 export function SaveAttachmentAs(arg1:string):Promise<string>;
 

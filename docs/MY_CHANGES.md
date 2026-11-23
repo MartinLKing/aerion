@@ -244,3 +244,12 @@ Recipients in the composer show the name and the address, so it is clear which o
 - A name saved in the composer is also used in the email being written. A save in a pop-out composer refreshes the main window (`contacts_changed` IPC message).
 - New: `internal/contact/saved.go` (with tests), `app/contact_save.go`, `SaveContactButton.svelte`, `contactSaves.svelte.ts`.
 - Bindings can be generated while Emailio is open by pointing APPDATA at an empty folder for that command; the generator otherwise finds the running copy and writes nothing.
+
+## Fix: some attachments were hidden
+
+The attachment chips left out every file marked inline, assuming the body shows it. Apple Mail marks attached photos and PDFs as inline too, so they appeared nowhere although the list showed a paperclip.
+
+- A file is now left out only if it is an image the message's HTML displays (and at most 5 MB, the limit for showing it). Everything else gets a chip, also in decrypted messages. Emails already synced are fixed without a re-sync.
+- Save All saves and counts only the files shown as chips; it used to include logos.
+- New: `frontend/src/lib/utils/inlineAttachments.ts`. `SaveAllAttachments` and `SaveAllEncryptedAttachments` now take the files to save.
+- Known issue, not changed: files are opened and saved by name, so of two different files with the same name in one email, the first is used for both.

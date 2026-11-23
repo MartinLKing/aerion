@@ -5,6 +5,7 @@
   import { message as messageModels } from '../../../../wailsjs/go/models'
   import { toasts } from '$lib/stores/toast'
   import { _ } from '$lib/i18n'
+  import { notShownInBody } from '$lib/utils/inlineAttachments'
 
   // Decrypted attachment metadata (from encrypted messages, not in DB)
   interface DecryptedAttachment {
@@ -18,9 +19,11 @@
   interface Props {
     messageId: string
     encryptedAttachments?: DecryptedAttachment[]
+    /** The message's HTML, to tell which inline images it displays */
+    bodyHtml?: string
   }
 
-  let { messageId, encryptedAttachments }: Props = $props()
+  let { messageId, encryptedAttachments, bodyHtml = '' }: Props = $props()
 
   // State
   let attachments = $state<messageModels.Attachment[]>([])
@@ -30,12 +33,12 @@
   // Determine if we're in encrypted mode
   let isEncrypted = $derived(encryptedAttachments != null && encryptedAttachments.length > 0)
 
-  // Chips only show real attachments: inline images (signature logos, embedded
-  // pictures) are already visible in the message body.
-  let visibleAttachments = $derived(attachments.filter(att => !att.isInline))
-  let visibleEncrypted = $derived((encryptedAttachments ?? []).filter(att => !att.isInline))
+  // Chips leave out only files the message body itself displays (signature
+  // logos, embedded pictures). The inline mark alone says little: Apple Mail
+  // puts it on attached photos and PDFs too.
+  let visibleAttachments = $derived(notShownInBody(attachments, bodyHtml))
+  let visibleEncrypted = $derived(notShownInBody(encryptedAttachments ?? [], bodyHtml))
   let visibleCount = $derived(isEncrypted ? visibleEncrypted.length : visibleAttachments.length)
-  let saveAllCount = $derived(isEncrypted ? encryptedAttachments!.length : attachments.length)
 
   // Load attachments when messageId changes (only for non-encrypted)
   $effect(() => {
@@ -138,9 +141,9 @@
     savingAll = true
     try {
       if (isEncrypted) {
-        const folder = await SaveAllEncryptedAttachments(messageId)
+        const folder = await SaveAllEncryptedAttachments(messageId, visibleEncrypted.map(att => att.filename))
         if (folder) {
-          toasts.success($_('toast.attachmentsSaved', { values: { count: encryptedAttachments!.length } }), [
+          toasts.success($_('toast.attachmentsSaved', { values: { count: visibleEncrypted.length } }), [
             {
               label: $_('attachment.openFolder'),
               onClick: () => OpenFolder(folder)
@@ -148,9 +151,9 @@
           ])
         }
       } else {
-        const folder = await SaveAllAttachments(messageId)
+        const folder = await SaveAllAttachments(messageId, visibleAttachments.map(att => att.id))
         if (folder) {
-          toasts.success($_('toast.attachmentsSaved', { values: { count: attachments.length } }), [
+          toasts.success($_('toast.attachmentsSaved', { values: { count: visibleAttachments.length } }), [
             {
               label: $_('attachment.openFolder'),
               onClick: () => OpenFolder(folder)
@@ -221,7 +224,7 @@
     onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation() }}
   >
     {#if isEncrypted}
-      {#each visibleEncrypted as att (att.filename)}
+      {#each visibleEncrypted as att, i (att.filename + ':' + i)}
         {@render chip(att.filename, att.contentType, att.size, downloadingIds.has(att.filename), () => handleEncryptedOpen(att), () => handleEncryptedDownload(att))}
       {/each}
     {:else}
@@ -241,7 +244,7 @@
           {$_('attachment.saving')}
         {:else}
           <Icon icon="mdi:download-multiple" class="w-4 h-4" />
-          {$_('attachment.saveAll', { values: { count: saveAllCount } })}
+          {$_('attachment.saveAll', { values: { count: visibleCount } })}
         {/if}
       </button>
     {/if}

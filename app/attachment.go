@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/hkdb/aerion/internal/email"
@@ -327,7 +328,8 @@ func (a *App) OpenFolder(path string) error {
 
 // SaveAllAttachments shows a folder picker and saves all attachments from a message to that folder
 // Returns the folder path where files were saved, or empty string if cancelled
-func (a *App) SaveAllAttachments(messageID string) (string, error) {
+// attachmentIDs are the files to save (Emailio: the ones shown as chips).
+func (a *App) SaveAllAttachments(messageID string, attachmentIDs []string) (string, error) {
 	log := logging.WithComponent("app")
 
 	// Get all attachments for the message
@@ -335,6 +337,9 @@ func (a *App) SaveAllAttachments(messageID string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get attachments: %w", err)
 	}
+	attachments = slices.DeleteFunc(attachments, func(att *message.Attachment) bool {
+		return !slices.Contains(attachmentIDs, att.ID)
+	})
 	if len(attachments) == 0 {
 		return "", fmt.Errorf("no attachments found for message")
 	}
@@ -574,7 +579,8 @@ func (a *App) OpenEncryptedAttachment(messageID, filename string) error {
 
 // SaveAllEncryptedAttachments shows a folder picker and saves all attachments from an encrypted message.
 // Returns the folder path where files were saved, or empty string if cancelled.
-func (a *App) SaveAllEncryptedAttachments(messageID string) (string, error) {
+// filenames are the files to save (Emailio: the ones shown as chips).
+func (a *App) SaveAllEncryptedAttachments(messageID string, filenames []string) (string, error) {
 	log := logging.WithComponent("app")
 
 	msg, err := a.messageStore.Get(messageID)
@@ -595,7 +601,7 @@ func (a *App) SaveAllEncryptedAttachments(messageID string) (string, error) {
 	parsed := a.syncEngine.ParseDecryptedBody(innerBytes, messageID)
 	var regularAtts []*message.Attachment
 	for _, att := range parsed.Attachments {
-		if !att.IsInline {
+		if slices.Contains(filenames, att.Filename) {
 			regularAtts = append(regularAtts, att)
 		}
 	}

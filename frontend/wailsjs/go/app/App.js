@@ -1110,12 +1110,12 @@ export function RunFilterRule(arg1) {
   return window['go']['app']['App']['RunFilterRule'](arg1);
 }
 
-export function SaveAllAttachments(arg1) {
-  return window['go']['app']['App']['SaveAllAttachments'](arg1);
+export function SaveAllAttachments(arg1, arg2) {
+  return window['go']['app']['App']['SaveAllAttachments'](arg1, arg2);
 }
 
-export function SaveAllEncryptedAttachments(arg1) {
-  return window['go']['app']['App']['SaveAllEncryptedAttachments'](arg1);
+export function SaveAllEncryptedAttachments(arg1, arg2) {
+  return window['go']['app']['App']['SaveAllEncryptedAttachments'](arg1, arg2);
 }
 
 export function SaveAttachmentAs(arg1) {
