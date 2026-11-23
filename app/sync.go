@@ -160,6 +160,7 @@ func (a *App) SyncFolder(accountID, folderID string) error {
 
 	// Manual syncs don't go through the scheduler's new mail callback
 	a.applyFilterRulesAfterSync(accountID, folderID)
+	a.learnContactsAfterSync(accountID, folderID)
 
 	// Start background body fetching (emits progress events for "bodies" phase)
 	// Pass ctx so body fetch can also be cancelled

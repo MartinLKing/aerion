@@ -45,6 +45,7 @@ func (a *App) initBackgroundSync(ctx context.Context) {
 		// Catches anything handleNewMailNotification didn't see, such as new mail
 		// offset by deletions so the Inbox total didn't rise
 		a.applyFilterRulesAfterSync(accountID, folderID)
+		a.learnContactsAfterSync(accountID, folderID)
 		wailsRuntime.EventsEmit(a.ctx, "folder:synced", map[string]interface{}{
 			"accountId": accountID,
 			"folderId":  folderID,

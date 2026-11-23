@@ -465,12 +465,7 @@ func (ops *composeOps) sendMessage(ctx context.Context, accountID string, msg sm
 	}
 
 	// Add recipients to local contacts (best-effort; send already succeeded)
-	for _, to := range msg.To {
-		_ = ops.contactStore.AddOrUpdate(to.Address, to.Name)
-	}
-	for _, cc := range msg.Cc {
-		_ = ops.contactStore.AddOrUpdate(cc.Address, cc.Name)
-	}
+	ops.collectRecipients(&msg)
 
 	// Delete draft if one was provided (send already succeeded — log errors, don't fail)
 	if d != nil && ops.draftOps != nil {
@@ -552,6 +547,7 @@ func (a *App) SendMessage(accountID string, msg smtp.ComposeMessage) error {
 		return err
 	}
 	a.markOriginalResponded(accountID, msg.InReplyTo, msg.Subject)
+	a.emitContactsChanged()
 	go func() {
 		if err := a.syncSentFolder(accountID); err != nil {
 			log := logging.WithComponent("app")
@@ -620,6 +616,8 @@ func (a *App) syncSentFolder(accountID string) error {
 	if err := a.syncEngine.FetchBodiesInBackground(a.ctx, accountID, sentFolder.ID, syncPeriodDays); err != nil {
 		log.Warn().Err(err).Str("folderID", sentFolder.ID).Msg("Failed to fetch bodies for Sent folder")
 	}
+
+	a.learnContactsAfterSync(accountID, sentFolder.ID)
 
 	// Emit synced event
 	wailsRuntime.EventsEmit(a.ctx, "folder:synced", map[string]interface{}{

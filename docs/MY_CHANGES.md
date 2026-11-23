@@ -224,3 +224,13 @@ Opening an `.ics` file (an invitation, or one saved from a website) shows the ev
 - Double-clicking a conversation in the Drafts folder opens it for editing.
 
 **Separate window.** With Settings → Composer → composer mode set to separate window, replies, reply-all, forwards and draft edits now open in their own window too. Upstream only did this for new messages, so replies always used the overlay that blocks the main window.
+
+## Contacts from sent mail, suggestions by most recent
+
+Recipient suggestions list the person you emailed last first; how often you email them only breaks ties, and people never emailed come last, alphabetically. Upstream sorts by how often, and cut the list to 10 before the final sort.
+
+- Everyone you send to (To, Cc and now Bcc) is saved as a collected contact in Emailio only, not in Google or Microsoft contacts. Your own addresses are skipped and failures are logged.
+- Recipients are also learned from the Sent folder after each Sent sync, with the real sent dates: all existing Sent mail the first time, then only newer mail. This covers mail sent from webmail or a phone. A marker per account in the settings table remembers how far it has read, so old mail doesn't bring back a contact you deleted. Emailing that person again does.
+- An open Contacts view reloads after a send or when contacts were learned.
+- New: `app/contact_collect.go`, `internal/contact/sent.go`, `internal/message/sent_recipients.go`, with tests. Changed: ranking in `internal/contact/store.go`. No database table changes.
+- `TestMSSidecar_*` in `extensions/contacts/backend` fail on Windows with or without this change (a temp file is still open at cleanup).

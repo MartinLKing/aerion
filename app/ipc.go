@@ -117,6 +117,7 @@ func (a *App) handleComposerMessageSent(payload ipc.MessageSentPayload) {
 	})
 
 	a.markOriginalResponded(payload.AccountID, payload.InReplyTo, payload.Subject)
+	a.emitContactsChanged()
 
 	// Sync Sent folder to pick up the new message
 	go func() {

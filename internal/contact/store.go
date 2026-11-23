@@ -54,13 +54,13 @@ func (s *Store) SetVCardScanner(scanner *VCardScanner) {
 // The optional VCardScanner is still consulted for filesystem-based .vcf
 // files (unchanged).
 //
-// Ranked by: send count > recency > source priority. Public signature preserved.
+// Ranked by: recency > send count > email (Emailio). Public signature preserved.
 func (s *Store) Search(query string, limit int) ([]*Contact, error) {
 	if limit <= 0 {
 		limit = 10
 	}
 
-	unified, err := s.searchUnified(query, limit)
+	unified, err := s.searchUnified(query)
 	if err != nil {
 		s.log.Warn().Err(err).Msg("Failed to search unified contacts")
 		unified = []*Contact{}
@@ -95,7 +95,7 @@ func (s *Store) Search(query string, limit int) ([]*Contact, error) {
 //     records (state row missing, addressbook deleted, source deleted) or
 //     disabled-source records are filtered OUT so they don't surface in the
 //     "All" view but stay invisible under their (disabled/missing) source.
-func (s *Store) searchUnified(query string, limit int) ([]*Contact, error) {
+func (s *Store) searchUnified(query string) ([]*Contact, error) {
 	pattern := "%" + strings.ToLower(query) + "%"
 	sqlQuery := `
 		SELECT ce.email, COALESCE(cr.fn, ''), cr.source, ce.send_count, ce.last_used, cr.created_at
@@ -111,11 +111,11 @@ func (s *Store) searchUnified(query string, limit int) ([]*Contact, error) {
 		      WHERE crs.record_id = cr.id AND s.enabled = 1 AND ab.enabled = 1
 		    )
 		  )
-		ORDER BY ce.send_count DESC, ce.last_used DESC
-		LIMIT ?
 	`
+	// No ORDER BY / LIMIT here: last_used is stored as text in mixed time
+	// zones, so ranking and limiting happen on parsed times in Go (Emailio).
 
-	rows, err := s.db.Query(sqlQuery, pattern, pattern, limit)
+	rows, err := s.db.Query(sqlQuery, pattern, pattern)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search unified contacts: %w", err)
 	}
@@ -521,7 +521,7 @@ func (s *Store) Count() (int, error) {
 // MergeResults merges contacts from multiple sources and deduplicates by email.
 // Public function preserved for back-compat.
 //
-// Ranking: send count > recency > source priority.
+// Ranking: recency > send count > email (Emailio; upstream ranks by send count).
 func MergeResults(sources ...[]*Contact) []*Contact {
 	byEmail := make(map[string]*Contact)
 	for _, contacts := range sources {
@@ -532,17 +532,15 @@ func MergeResults(sources ...[]*Contact) []*Contact {
 				byEmail[email] = c
 				continue
 			}
-			if c.SendCount > existing.SendCount {
-				byEmail[email] = c
-				continue
+			best, other := existing, c
+			if rankedBefore(c, existing) ||
+				(!rankedBefore(existing, c) && sourcePriority(c.Source) > sourcePriority(existing.Source)) {
+				best, other = c, existing
 			}
-			if c.SendCount == existing.SendCount && c.LastUsed.After(existing.LastUsed) {
-				byEmail[email] = c
-				continue
+			if best.DisplayName == "" {
+				best.DisplayName = other.DisplayName
 			}
-			if c.SendCount == existing.SendCount && sourcePriority(c.Source) > sourcePriority(existing.Source) {
-				byEmail[email] = c
-			}
+			byEmail[email] = best
 		}
 	}
 	result := make([]*Contact, 0, len(byEmail))
@@ -550,15 +548,24 @@ func MergeResults(sources ...[]*Contact) []*Contact {
 		result = append(result, c)
 	}
 	sort.Slice(result, func(i, j int) bool {
-		if result[i].SendCount != result[j].SendCount {
-			return result[i].SendCount > result[j].SendCount
+		if rankedBefore(result[i], result[j]) {
+			return true
 		}
-		if !result[i].LastUsed.Equal(result[j].LastUsed) {
-			return result[i].LastUsed.After(result[j].LastUsed)
+		if rankedBefore(result[j], result[i]) {
+			return false
 		}
 		return result[i].Email < result[j].Email
 	})
 	return result
+}
+
+// rankedBefore orders suggestions: most recently emailed first, then most
+// often emailed. Never-emailed contacts have a zero LastUsed and come last.
+func rankedBefore(a, b *Contact) bool {
+	if !a.LastUsed.Equal(b.LastUsed) {
+		return a.LastUsed.After(b.LastUsed)
+	}
+	return a.SendCount > b.SendCount
 }
 
 // sourcePriority returns the priority of a contact source (higher is better).
