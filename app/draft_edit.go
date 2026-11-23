@@ -91,6 +91,6 @@ func (a *App) serverDraftToComposeMessage(msg *message.Message) *smtp.ComposeMes
 
 	cm := a.messageToComposeMessage(msg)
 	cm.From = smtp.Address{Name: msg.FromName, Address: msg.FromEmail}
-	a.fetchForwardAttachments(log, msg, &cm.Attachments)
+	cm.Attachments = a.originalAttachments(msg, cm.HTMLBody, true)
 	return cm
 }

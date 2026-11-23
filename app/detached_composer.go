@@ -15,7 +15,6 @@ import (
 	"github.com/hkdb/aerion/internal/credentials"
 	"github.com/hkdb/aerion/internal/database"
 	"github.com/hkdb/aerion/internal/draft"
-	"github.com/hkdb/aerion/internal/email"
 	"github.com/hkdb/aerion/internal/folder"
 	"github.com/hkdb/aerion/internal/imap"
 	"github.com/hkdb/aerion/internal/ipc"
@@ -628,8 +627,7 @@ func (c *ComposerApp) PrepareReply() (*smtp.ComposeMessage, error) {
 		return msg, nil
 	}
 
-	// For reply/forward, use the same logic as main app
-	// This is a simplified version - the full logic is in app.go PrepareReply
+	// For reply/forward, use the same logic as main app (Emailio)
 	msg, err := c.messageStore.Get(c.config.MessageID)
 	if err != nil {
 		return nil, err
@@ -639,7 +637,10 @@ func (c *ComposerApp) PrepareReply() (*smtp.ComposeMessage, error) {
 	}
 
 	c.originalMessage = msg
-	c.composeMessage = c.buildReplyMessage(msg, c.config.Mode)
+	c.composeMessage, err = c.prepareReply(msg.ID, c.config.Mode)
+	if err != nil {
+		return nil, err
+	}
 	return c.composeMessage, nil
 }
 
@@ -870,102 +871,6 @@ func (c *ComposerApp) ReadFileAsAttachment(filePath string) (*ComposerAttachment
 // If the draft is encrypted (S/MIME or PGP), decrypts the body first.
 func (c *ComposerApp) draftToComposeMessage(d *draft.Draft) *smtp.ComposeMessage {
 	return c.draftOps.toComposeMessage(d)
-}
-
-// buildReplyMessage builds a compose message for reply/forward.
-// This is a simplified version of the logic in app.go PrepareReply.
-func (c *ComposerApp) buildReplyMessage(msg *message.Message, mode string) *smtp.ComposeMessage {
-	// Prefer the identity the original message was addressed to (#325), then the
-	// default identity, then the first.
-	identities, _ := c.accountStore.GetIdentities(c.config.AccountID)
-	fromIdentity := selectReplyFromIdentity(identities, msg)
-
-	from := smtp.Address{}
-	if fromIdentity != nil {
-		from = smtp.Address{Name: fromIdentity.Name, Address: fromIdentity.Email}
-	}
-
-	// Build subject
-	subject := msg.Subject
-	switch mode {
-	case "forward":
-		if !strings.HasPrefix(strings.ToLower(subject), "fwd:") && !strings.HasPrefix(strings.ToLower(subject), "fw:") {
-			subject = "Fwd: " + subject
-		}
-	default: // reply, reply-all
-		if !strings.HasPrefix(strings.ToLower(subject), "re:") {
-			subject = "Re: " + subject
-		}
-	}
-
-	// Build recipients
-	var to, cc []smtp.Address
-	selfEmails := make(map[string]bool)
-	for _, id := range identities {
-		selfEmails[strings.ToLower(id.Email)] = true
-	}
-
-	originalFrom := []smtp.Address{{Name: msg.FromName, Address: msg.FromEmail}}
-
-	switch mode {
-	case "reply":
-		to = filterSelfAddresses(originalFrom, selfEmails)
-	case "reply-all":
-		to = filterSelfAddresses(originalFrom, selfEmails)
-		// Add original To (excluding self)
-		originalTo := parseAddressList(msg.ToList)
-		to = append(to, filterSelfAddresses(originalTo, selfEmails)...)
-		// Add original Cc (excluding self and duplicates)
-		originalCc := parseAddressList(msg.CcList)
-		toSet := make(map[string]bool)
-		for _, addr := range to {
-			toSet[strings.ToLower(addr.Address)] = true
-		}
-		for _, addr := range filterSelfAddresses(originalCc, selfEmails) {
-			if !toSet[strings.ToLower(addr.Address)] {
-				cc = append(cc, addr)
-			}
-		}
-	case "forward":
-		// Leave empty for user to fill
-	}
-
-	// Build quoted body
-	dateStr := msg.Date.Format("Mon, Jan 2 2006 at 3:04:05 PM MST")
-	sender := msg.FromEmail
-	if msg.FromName != "" {
-		sender = msg.FromName + " <" + msg.FromEmail + ">"
-	}
-
-	// Plaintext quote source: prefer the original's text part, but fall back to
-	// deriving it from HTML so HTML-only originals still produce a real quote
-	// (msg.BodyText is empty for HTML-only mail).
-	quotedText := msg.BodyText
-	if strings.TrimSpace(quotedText) == "" && msg.BodyHTML != "" {
-		quotedText = email.ExtractPlainTextFromHTML(msg.BodyHTML)
-	}
-
-	var htmlBody, textBody string
-	if mode == "forward" {
-		htmlBody = fmt.Sprintf("<br><br>---------- Forwarded message ----------<br>From: %s<br>Subject: %s<br>Date: %s<br>To: %s<br><br>%s",
-			escapeHTML(sender), escapeHTML(msg.Subject), escapeHTML(dateStr), escapeHTML(msg.ToList), msg.BodyHTML)
-		textBody = fmt.Sprintf("\n\n---------- Forwarded message ----------\nFrom: %s\nSubject: %s\nDate: %s\nTo: %s\n\n%s",
-			sender, msg.Subject, dateStr, msg.ToList, quotedText)
-	} else {
-		citation := fmt.Sprintf("On %s, %s wrote:", dateStr, sender)
-		htmlBody = fmt.Sprintf("<br><br>%s<br><blockquote type=\"cite\">%s</blockquote>", escapeHTML(citation), msg.BodyHTML)
-		textBody = fmt.Sprintf("\n\n%s\n%s", citation, quoteText(quotedText))
-	}
-
-	return &smtp.ComposeMessage{
-		From:      from,
-		To:        to,
-		Cc:        cc,
-		Subject:   subject,
-		HTMLBody:  htmlBody,
-		TextBody:  textBody,
-		InReplyTo: msg.MessageID,
-	}
 }
 
 // HasSMIMECertificate returns whether the account has a valid default S/MIME certificate.

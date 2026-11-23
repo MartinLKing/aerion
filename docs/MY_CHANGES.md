@@ -262,3 +262,9 @@ Files were looked up in the email by name only, so opening or saving the second 
 - Save All numbers repeated names, "file (2).html", doesn't replace existing files, and uses only the file name itself.
 - A kept copy whose size doesn't match is downloaded again.
 - Decrypted emails: inline files are now listed too (the earlier hidden-attachments fix didn't reach them, they were dropped in the backend), and files are opened by position. Opening one used to crash on an empty message ID.
+
+## Fix: attachments when sending, forwarding and using the pop-out composer
+
+- **Deleted images were still sent.** An image dropped into the text and then deleted stayed in the email invisibly. Only images still in the text are sent now. In plain text there is no HTML to check, so they all are. An inline file the text doesn't use (old drafts, some forwards) shows as a normal attachment instead.
+- **Forwards left out inline files without a Content-ID**, such as Apple Mail photos. A forward now carries every file: images the body displays stay embedded, the rest are normal attachments. The same goes for editing a draft written elsewhere.
+- **The pop-out composer's forwards had no attachments**, and its replies ignored Reply-To and loaded remote images, because it used a simplified copy of the reply code. It now uses the main window's (`prepareReply` in `app/original_attachments.go`, with tests); the copy is removed. This mattered since the separate-window setting also covers replies and forwards.

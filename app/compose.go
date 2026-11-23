@@ -21,7 +21,6 @@ import (
 	"github.com/hkdb/aerion/internal/imap"
 	"github.com/hkdb/aerion/internal/logging"
 	"github.com/hkdb/aerion/internal/message"
-	"github.com/rs/zerolog"
 	"github.com/hkdb/aerion/internal/oauth2"
 	"github.com/hkdb/aerion/internal/pgp"
 	"github.com/hkdb/aerion/internal/smime"
@@ -800,54 +799,8 @@ func (a *App) PrepareReply(messageID, mode string) (*smtp.ComposeMessage, error)
 		refs = append(refs, ensureAngleBrackets(msg.MessageID))
 	}
 
-	// Fetch inline attachments so cid: references in quoted HTML render correctly
-	var attachments []smtp.Attachment
-	inlineMap, inlineErr := a.attachmentStore.GetInlineByMessage(messageID)
-	if inlineErr != nil {
-		log.Warn().Err(inlineErr).Msg("Failed to get inline attachments for reply/forward")
-	}
-	// Map cid -> the stored row's real filename. Re-attached parts used to
-	// carry the raw Content-ID as filename, and Outlook-style ids
-	// (…@…prod.outlook.com) look like forbidden ".com" files to receiving
-	// servers, bouncing the whole reply (#370).
-	inlineNames := map[string]string{}
-	if rows, rowsErr := a.attachmentStore.GetByMessage(messageID); rowsErr == nil {
-		for _, row := range rows {
-			if row.ContentID != "" && row.Filename != "" {
-				inlineNames[row.ContentID] = row.Filename
-			}
-		}
-	}
-	for cid, dataURL := range inlineMap {
-		// Replies include an "inline" attachment only when the quoted HTML
-		// actually embeds it — mailers stamp Content-IDs on ordinary document
-		// attachments, and re-attaching those sends phantom copies with the
-		// cid as filename (#381). Forwards keep every part (the forwarder
-		// wants the documents).
-		if mode != "forward" && !quotedHTMLReferencesCID(quotedHTML, cid) {
-			continue
-		}
-		ct, b64 := parseDataURL(dataURL)
-		if b64 == "" {
-			continue
-		}
-		filename := inlineNames[cid]
-		if filename == "" {
-			filename = email.FallbackFilename(ct)
-		}
-		attachments = append(attachments, smtp.Attachment{
-			ContentBase64: b64,
-			ContentType:   ct,
-			ContentID:     cid,
-			Inline:        true,
-			Filename:      sanitizeAttachmentFilename(filename),
-		})
-	}
-
-	// For forwards, also include regular (non-inline) attachments
-	if mode == "forward" {
-		a.fetchForwardAttachments(log, msg, &attachments)
-	}
+	// Images the quoted HTML displays; forwards also carry every other file
+	attachments := a.originalAttachments(msg, quotedHTML, mode == "forward")
 
 	return &smtp.ComposeMessage{
 		From:        from,
@@ -869,49 +822,6 @@ func (a *App) PrepareReply(messageID, mode string) (*smtp.ComposeMessage, error)
 // appears anywhere in the body, regardless of quote style.
 func quotedHTMLReferencesCID(html, cid string) bool {
 	return strings.Contains(html, "cid:"+cid)
-}
-
-// fetchForwardAttachments fetches regular (non-inline) attachment content from IMAP
-// and appends them to the attachments slice. Failures are logged but not fatal.
-func (a *App) fetchForwardAttachments(log zerolog.Logger, msg *message.Message, attachments *[]smtp.Attachment) {
-	allAtts, err := a.attachmentStore.GetByMessage(msg.ID)
-	if err != nil {
-		log.Warn().Err(err).Msg("Failed to get attachments for forward")
-		return
-	}
-
-	// Filter to non-inline attachments only
-	var regularAtts []*message.Attachment
-	for _, att := range allAtts {
-		if !att.IsInline {
-			regularAtts = append(regularAtts, att)
-		}
-	}
-	if len(regularAtts) == 0 {
-		return
-	}
-
-	// Fetch raw message from IMAP once for all attachments
-	raw, fetchErr := a.syncEngine.FetchRawMessage(a.ctx, msg.AccountID, msg.FolderID, msg.UID)
-	if fetchErr != nil {
-		log.Warn().Err(fetchErr).Msg("Failed to fetch raw message for forward attachments (offline?)")
-		return
-	}
-
-	downloader := email.NewAttachmentDownloader(a.paths.AttachmentsPath())
-	for _, att := range regularAtts {
-		content, extractErr := downloader.ExtractPart(raw, email.PartRefFor(att, allAtts))
-		if extractErr != nil {
-			log.Warn().Err(extractErr).Str("filename", att.Filename).Msg("Failed to extract attachment for forward")
-			continue
-		}
-		*attachments = append(*attachments, smtp.Attachment{
-			Content:     content,
-			ContentType: att.ContentType,
-			Filename:    att.Filename,
-			Inline:      false,
-		})
-	}
 }
 
 // parseDataURL extracts the content type and base64 data from a data URL.

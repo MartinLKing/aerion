@@ -571,6 +571,9 @@
 
     // Add inline images as inline attachments with Content-ID
     for (const img of inlineImages) {
+      // Emailio: an image deleted from the text is not sent. Plain text has no
+      // HTML to look in, so there they all are.
+      if (!isPlainTextMode && !htmlContent.includes(`cid:${img.cid}`)) continue
       smtpAttachments.push(new smtp.Attachment({
         filename: img.filename,
         content_type: img.contentType,
@@ -1213,7 +1216,8 @@
         const base64Data = att.content_base64 || (att.content as unknown as string)
         if (!base64Data) continue
 
-        if (att.inline && att.content_id) {
+        // Emailio: an inline file the text doesn't use becomes a visible attachment
+        if (att.inline && att.content_id && htmlBody.includes(`cid:${att.content_id}`)) {
           // Inline image - restore to inlineImages array and replace CID with data URL
           const dataUrl = `data:${att.content_type};base64,${base64Data}`
           inlineImages = [...inlineImages, {
@@ -1224,7 +1228,7 @@
             filename: att.filename,
           }]
           htmlBody = htmlBody.replaceAll(`cid:${att.content_id}`, dataUrl)
-        } else if (!att.inline) {
+        } else {
           // Regular attachment
           attachments = [...attachments, {
             filename: att.filename,
