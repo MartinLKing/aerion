@@ -173,6 +173,8 @@ type DecryptedAttachment struct {
 	Size        int    `json:"size"`
 	IsInline    bool   `json:"isInline"`
 	ContentID   string `json:"contentId"`
+	// Index is the position in the decrypted message, to open or save it by
+	Index int `json:"index"`
 }
 
 // SMIMEViewResult holds the on-view S/MIME processing result for the frontend
@@ -433,14 +435,12 @@ func (a *App) findRecipientIdentityEmail(msg *message.Message) string {
 }
 
 // buildDecryptedAttachmentList builds metadata for the frontend attachment list.
-// Only includes non-inline attachments (regular file attachments).
+// Includes inline ones: the frontend leaves out those the body displays (Emailio).
 func buildDecryptedAttachmentList(atts []*message.Attachment) []DecryptedAttachment {
 	var result []DecryptedAttachment
-	for _, att := range atts {
-		if att.IsInline {
-			continue
-		}
+	for i, att := range atts {
 		result = append(result, DecryptedAttachment{
+			Index:       i,
 			Filename:    att.Filename,
 			ContentType: att.ContentType,
 			Size:        att.Size,

@@ -199,7 +199,7 @@ export function DiscoverOAuthProvider(arg1:string):Promise<app.OIDCDiscoveryResu
 
 export function DownloadAttachment(arg1:string,arg2:string):Promise<string>;
 
-export function DownloadEncryptedAttachment(arg1:string,arg2:string,arg3:string):Promise<string>;
+export function DownloadEncryptedAttachment(arg1:string,arg2:number,arg3:string):Promise<string>;
 
 export function EmptySpam(arg1:string,arg2:string):Promise<void>;
 
@@ -519,7 +519,7 @@ export function OpenDefaultAppsSettings():Promise<void>;
 
 export function OpenDraftForEdit(arg1:string):Promise<app.EditableDraft>;
 
-export function OpenEncryptedAttachment(arg1:string,arg2:string):Promise<void>;
+export function OpenEncryptedAttachment(arg1:string,arg2:number):Promise<void>;
 
 export function OpenFile(arg1:string):Promise<void>;
 
@@ -577,7 +577,7 @@ export function RunFilterRule(arg1:string):Promise<number>;
 
 export function SaveAllAttachments(arg1:string,arg2:Array<string>):Promise<string>;
 
-export function SaveAllEncryptedAttachments(arg1:string,arg2:Array<string>):Promise<string>;
+export function SaveAllEncryptedAttachments(arg1:string,arg2:Array<number>):Promise<string>;
 
 export function SaveAttachmentAs(arg1:string):Promise<string>;
 
@@ -585,7 +585,7 @@ export function SaveContact(arg1:string,arg2:string):Promise<void>;
 
 export function SaveDraft(arg1:string,arg2:smtp.ComposeMessage,arg3:string):Promise<app.DraftResult>;
 
-export function SaveEncryptedAttachmentAs(arg1:string,arg2:string):Promise<string>;
+export function SaveEncryptedAttachmentAs(arg1:string,arg2:string,arg3:number):Promise<string>;
 
 export function SaveFilterRule(arg1:rules.Rule):Promise<rules.Rule>;
 

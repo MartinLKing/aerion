@@ -14,6 +14,7 @@
     size: number
     isInline: boolean
     contentId: string
+    index: number
   }
 
   interface Props {
@@ -100,10 +101,10 @@
   }
 
   async function handleEncryptedDownload(att: DecryptedAttachment) {
-    const key = att.filename
+    const key = 'encrypted:' + att.index
     downloadingIds = new Set([...downloadingIds, key])
     try {
-      const path = await SaveEncryptedAttachmentAs(messageId, att.filename)
+      const path = await SaveEncryptedAttachmentAs(messageId, att.filename, att.index)
       if (path) {
         toasts.success($_('toast.attachmentSaved', { values: { filename: att.filename } }), [
           {
@@ -125,10 +126,10 @@
   }
 
   async function handleEncryptedOpen(att: DecryptedAttachment) {
-    const key = att.filename
+    const key = 'encrypted:' + att.index
     downloadingIds = new Set([...downloadingIds, key])
     try {
-      await OpenEncryptedAttachment(messageId, att.filename)
+      await OpenEncryptedAttachment(messageId, att.index)
     } catch (err) {
       console.error('Failed to open encrypted attachment:', err)
       toasts.error($_('toast.failedToOpenAttachment', { values: { filename: att.filename } }))
@@ -141,7 +142,7 @@
     savingAll = true
     try {
       if (isEncrypted) {
-        const folder = await SaveAllEncryptedAttachments(messageId, visibleEncrypted.map(att => att.filename))
+        const folder = await SaveAllEncryptedAttachments(messageId, visibleEncrypted.map(att => att.index))
         if (folder) {
           toasts.success($_('toast.attachmentsSaved', { values: { count: visibleEncrypted.length } }), [
             {
@@ -224,8 +225,8 @@
     onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation() }}
   >
     {#if isEncrypted}
-      {#each visibleEncrypted as att, i (att.filename + ':' + i)}
-        {@render chip(att.filename, att.contentType, att.size, downloadingIds.has(att.filename), () => handleEncryptedOpen(att), () => handleEncryptedDownload(att))}
+      {#each visibleEncrypted as att (att.index)}
+        {@render chip(att.filename, att.contentType, att.size, downloadingIds.has('encrypted:' + att.index), () => handleEncryptedOpen(att), () => handleEncryptedDownload(att))}
       {/each}
     {:else}
       {#each visibleAttachments as att (att.id)}

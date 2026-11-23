@@ -29,8 +29,27 @@ func NewAttachmentDownloader(attachmentsDir string) *AttachmentDownloader {
 	}
 }
 
-// ExtractAttachmentContent extracts the content of a specific attachment from raw email bytes
+// ExtractAttachmentContent extracts the first attachment with the given name.
+// Use ExtractPart when the attachment's other details are known.
 func (d *AttachmentDownloader) ExtractAttachmentContent(raw []byte, targetFilename string) ([]byte, error) {
+	candidates, err := d.partsNamed(raw, targetFilename)
+	if err != nil {
+		return nil, err
+	}
+	return candidates[0].content, nil
+}
+
+// ExtractPart extracts exactly the attachment ref refers to (Emailio).
+func (d *AttachmentDownloader) ExtractPart(raw []byte, ref PartRef) ([]byte, error) {
+	candidates, err := d.partsNamed(raw, ref.Filename)
+	if err != nil {
+		return nil, err
+	}
+	return pickPart(candidates, ref), nil
+}
+
+// partsNamed returns every part with the given name, in order; at least one.
+func (d *AttachmentDownloader) partsNamed(raw []byte, targetFilename string) ([]partCandidate, error) {
 	reader := bytes.NewReader(raw)
 
 	entity, err := gomessage.Read(reader)
@@ -40,7 +59,11 @@ func (d *AttachmentDownloader) ExtractAttachmentContent(raw []byte, targetFilena
 
 	// We need to find the attachment by matching properties
 	if mr := entity.MultipartReader(); mr != nil {
-		return d.findAttachmentInMultipart(mr, targetFilename)
+		candidates := d.findAttachmentsInMultipart(mr, targetFilename)
+		if len(candidates) == 0 {
+			return nil, fmt.Errorf("attachment not found: %s", targetFilename)
+		}
+		return candidates, nil
 	}
 
 	// Single-part message: the whole entity may itself be the attachment.
@@ -49,8 +72,7 @@ func (d *AttachmentDownloader) ExtractAttachmentContent(raw []byte, targetFilena
 		if err != nil {
 			return nil, err
 		}
-		transferEncoding := strings.ToLower(entity.Header.Get("Content-Transfer-Encoding"))
-		return decodeContent(content, transferEncoding), nil
+		return []partCandidate{newPartCandidate(entity, content)}, nil
 	}
 
 	return nil, fmt.Errorf("attachment not found: %s", targetFilename)
@@ -133,8 +155,19 @@ func buildDataURL(contentType string, content []byte) string {
 	return fmt.Sprintf("data:%s;base64,%s", contentType, encoded)
 }
 
-// findAttachmentInMultipart searches for an attachment by filename in a multipart message
-func (d *AttachmentDownloader) findAttachmentInMultipart(mr gomessage.MultipartReader, targetFilename string) ([]byte, error) {
+// newPartCandidate wraps a part's body, decoding it if it is still encoded.
+func newPartCandidate(part *gomessage.Entity, content []byte) partCandidate {
+	transferEncoding := strings.ToLower(part.Header.Get("Content-Transfer-Encoding"))
+	return partCandidate{
+		contentID: strings.Trim(part.Header.Get("Content-ID"), "<>"),
+		size:      len(content),
+		content:   decodeContent(content, transferEncoding),
+	}
+}
+
+// findAttachmentsInMultipart collects the parts with the given filename, in order
+func (d *AttachmentDownloader) findAttachmentsInMultipart(mr gomessage.MultipartReader, targetFilename string) []partCandidate {
+	var found []partCandidate
 	for {
 		part, err := mr.NextPart()
 		if err == io.EOF {
@@ -146,9 +179,7 @@ func (d *AttachmentDownloader) findAttachmentInMultipart(mr gomessage.MultipartR
 
 		// Handle nested multipart
 		if nestedMr := part.MultipartReader(); nestedMr != nil {
-			if content, err := d.findAttachmentInMultipart(nestedMr, targetFilename); err == nil {
-				return content, nil
-			}
+			found = append(found, d.findAttachmentsInMultipart(nestedMr, targetFilename)...)
 			continue
 		}
 
@@ -164,15 +195,17 @@ func (d *AttachmentDownloader) findAttachmentInMultipart(mr gomessage.MultipartR
 			if err != nil {
 				continue
 			}
+			innerFound := false
 			for _, inner := range DecodeTNEFAttachments(raw) {
 				if inner.Filename == targetFilename {
-					return inner.Content, nil
+					innerFound = true
+					found = append(found, partCandidate{size: len(inner.Content), content: inner.Content})
 				}
 			}
 			// Decode failed or no inner match: only the container itself can satisfy
 			// a request for "winmail.dat"; otherwise move on.
-			if strings.EqualFold(targetFilename, "winmail.dat") {
-				return raw, nil
+			if !innerFound && strings.EqualFold(targetFilename, "winmail.dat") {
+				found = append(found, partCandidate{size: len(raw), content: raw})
 			}
 			continue
 		}
@@ -182,16 +215,13 @@ func (d *AttachmentDownloader) findAttachmentInMultipart(mr gomessage.MultipartR
 		if filename == targetFilename {
 			content, err := io.ReadAll(part.Body)
 			if err != nil {
-				return nil, err
+				continue
 			}
-
-			// Decode content if transfer-encoded
-			transferEncoding := strings.ToLower(part.Header.Get("Content-Transfer-Encoding"))
-			return decodeContent(content, transferEncoding), nil
+			found = append(found, newPartCandidate(part, content))
 		}
 	}
 
-	return nil, fmt.Errorf("attachment not found: %s", targetFilename)
+	return found
 }
 
 // decodeMIMEFilename decodes a MIME-encoded filename with full charset support.

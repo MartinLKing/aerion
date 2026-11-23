@@ -253,3 +253,12 @@ The attachment chips left out every file marked inline, assuming the body shows 
 - Save All saves and counts only the files shown as chips; it used to include logos.
 - New: `frontend/src/lib/utils/inlineAttachments.ts`. `SaveAllAttachments` and `SaveAllEncryptedAttachments` now take the files to save.
 - Known issue, not changed: files are opened and saved by name, so of two different files with the same name in one email, the first is used for both.
+
+## Fix: wrong file when an email has several with the same name
+
+Files were looked up in the email by name only, so opening or saving the second of two same-named files gave the first, and Save All kept only one.
+
+- A file is now picked by Content-ID, then size, then position (`internal/email/part_ref.go`, with tests). Used for open, save, Save All, forwards and decrypted emails.
+- Save All numbers repeated names, "file (2).html", doesn't replace existing files, and uses only the file name itself.
+- A kept copy whose size doesn't match is downloaded again.
+- Decrypted emails: inline files are now listed too (the earlier hidden-attachments fix didn't reach them, they were dropped in the backend), and files are opened by position. Opening one used to crash on an empty message ID.

@@ -78,6 +78,7 @@
     size: number
     isInline: boolean
     contentId: string
+    index: number
   }
 
   // S/MIME on-view processing result type

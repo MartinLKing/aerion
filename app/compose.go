@@ -900,7 +900,7 @@ func (a *App) fetchForwardAttachments(log zerolog.Logger, msg *message.Message, 
 
 	downloader := email.NewAttachmentDownloader(a.paths.AttachmentsPath())
 	for _, att := range regularAtts {
-		content, extractErr := downloader.ExtractAttachmentContent(raw, att.Filename)
+		content, extractErr := downloader.ExtractPart(raw, email.PartRefFor(att, allAtts))
 		if extractErr != nil {
 			log.Warn().Err(extractErr).Str("filename", att.Filename).Msg("Failed to extract attachment for forward")
 			continue

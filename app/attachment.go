@@ -81,7 +81,9 @@ func (a *App) DownloadAttachment(attachmentID, savePath string) (string, error) 
 
 	// Check if already downloaded (only for default location, not custom paths)
 	if savePath == "" && att.LocalPath != "" {
-		if _, err := os.Stat(att.LocalPath); err == nil {
+		// A copy of another size is the wrong file, kept from when files were
+		// looked up by name only (Emailio). A size of 0 is unknown.
+		if info, err := os.Stat(att.LocalPath); err == nil && (att.Size == 0 || info.Size() == int64(att.Size)) {
 			log.Debug().Str("localPath", att.LocalPath).Msg("Attachment already downloaded")
 			return att.LocalPath, nil
 		}
@@ -111,7 +113,11 @@ func (a *App) DownloadAttachment(attachmentID, savePath string) (string, error) 
 
 	// Extract attachment content
 	downloader := email.NewAttachmentDownloader(a.paths.AttachmentsPath())
-	content, err := downloader.ExtractAttachmentContent(raw, att.Filename)
+	siblings, err := a.attachmentStore.GetByMessage(att.MessageID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get attachments: %w", err)
+	}
+	content, err := downloader.ExtractPart(raw, email.PartRefFor(att, siblings))
 	if err != nil {
 		log.Error().Err(err).Str("filename", att.Filename).Msg("Failed to extract attachment content")
 		return "", fmt.Errorf("failed to extract attachment: %w", err)
@@ -337,6 +343,7 @@ func (a *App) SaveAllAttachments(messageID string, attachmentIDs []string) (stri
 	if err != nil {
 		return "", fmt.Errorf("failed to get attachments: %w", err)
 	}
+	siblings := slices.Clone(attachments)
 	attachments = slices.DeleteFunc(attachments, func(att *message.Attachment) bool {
 		return !slices.Contains(attachmentIDs, att.ID)
 	})
@@ -359,7 +366,7 @@ func (a *App) SaveAllAttachments(messageID string, attachmentIDs []string) (stri
 
 	// In Flatpak, use portal save dialog (Wails GTK dialog doesn't route through portal)
 	if platform.IsFlatpak() {
-		return a.saveAllAttachmentsViaPortal(messageID, attachments, defaultDir)
+		return a.saveAllAttachmentsViaPortal(messageID, attachments, siblings, defaultDir)
 	}
 
 	// Native: use Wails folder dialog
@@ -397,13 +404,13 @@ func (a *App) SaveAllAttachments(messageID string, attachmentIDs []string) (stri
 	savedCount := 0
 
 	for _, att := range attachments {
-		content, err := downloader.ExtractAttachmentContent(raw, att.Filename)
+		content, err := downloader.ExtractPart(raw, email.PartRefFor(att, siblings))
 		if err != nil {
 			log.Warn().Err(err).Str("filename", att.Filename).Msg("Failed to extract attachment")
 			continue
 		}
 
-		savePath := filepath.Join(saveDir, att.Filename)
+		savePath := uniqueSavePath(saveDir, att.Filename)
 		_, err = downloader.SaveAttachment(att, content, savePath)
 		if err != nil {
 			log.Warn().Err(err).Str("filename", att.Filename).Msg("Failed to save attachment")
@@ -489,36 +496,23 @@ func (a *App) decryptMessageBody(msg *message.Message) ([]byte, error) {
 
 // DownloadEncryptedAttachment decrypts an encrypted message, extracts a specific attachment,
 // and saves it to disk. Returns the path where the file was saved.
-func (a *App) DownloadEncryptedAttachment(messageID, filename, savePath string) (string, error) {
+// index is the attachment's position in the decrypted message (Emailio).
+func (a *App) DownloadEncryptedAttachment(messageID string, index int, savePath string) (string, error) {
 	log := logging.WithComponent("app")
-	log.Debug().Str("messageID", messageID).Str("filename", filename).Msg("DownloadEncryptedAttachment called")
 
-	msg, err := a.messageStore.Get(messageID)
+	innerBytes, attachments, err := a.decryptedAttachments(messageID)
 	if err != nil {
-		return "", fmt.Errorf("failed to get message: %w", err)
+		return "", err
 	}
-	if msg == nil {
-		return "", fmt.Errorf("message not found: %s", messageID)
+	if index < 0 || index >= len(attachments) {
+		return "", fmt.Errorf("attachment not found in decrypted message")
 	}
+	att := attachments[index]
 
-	// Decrypt and unwrap
-	innerBytes, err := a.decryptMessageBody(msg)
-	if err != nil {
-		return "", fmt.Errorf("failed to decrypt message: %w", err)
-	}
-
-	// Extract attachment content from the decrypted body
 	downloader := email.NewAttachmentDownloader(a.paths.AttachmentsPath())
-	content, err := downloader.ExtractAttachmentContent(innerBytes, filename)
+	content, err := downloader.ExtractPart(innerBytes, email.PartRefFor(att, attachments))
 	if err != nil {
 		return "", fmt.Errorf("failed to extract attachment from decrypted message: %w", err)
-	}
-
-	// Create a temporary attachment record for SaveAttachment
-	att := &message.Attachment{
-		Filename:    filename,
-		ContentType: "application/octet-stream",
-		Size:        len(content),
 	}
 
 	localPath, err := downloader.SaveAttachment(att, content, savePath)
@@ -526,13 +520,29 @@ func (a *App) DownloadEncryptedAttachment(messageID, filename, savePath string) 
 		return "", fmt.Errorf("failed to save attachment: %w", err)
 	}
 
-	log.Info().Str("attachment", filename).Str("path", localPath).Int("size", len(content)).Msg("Encrypted attachment downloaded")
+	log.Info().Str("attachment", att.Filename).Str("path", localPath).Int("size", len(content)).Msg("Encrypted attachment downloaded")
 	return localPath, nil
+}
+
+// decryptedAttachments decrypts a message and lists its attachments in order.
+func (a *App) decryptedAttachments(messageID string) ([]byte, []*message.Attachment, error) {
+	msg, err := a.messageStore.Get(messageID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get message: %w", err)
+	}
+	if msg == nil {
+		return nil, nil, fmt.Errorf("message not found: %s", messageID)
+	}
+	innerBytes, err := a.decryptMessageBody(msg)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to decrypt message: %w", err)
+	}
+	return innerBytes, a.syncEngine.ParseDecryptedBody(innerBytes, messageID).Attachments, nil
 }
 
 // SaveEncryptedAttachmentAs shows a Save As dialog and saves an attachment from an encrypted message.
 // Returns the path where the file was saved, or empty string if cancelled.
-func (a *App) SaveEncryptedAttachmentAs(messageID, filename string) (string, error) {
+func (a *App) SaveEncryptedAttachmentAs(messageID, filename string, index int) (string, error) {
 	log := logging.WithComponent("app")
 	log.Debug().Str("messageID", messageID).Str("filename", filename).Msg("SaveEncryptedAttachmentAs called")
 
@@ -548,7 +558,7 @@ func (a *App) SaveEncryptedAttachmentAs(messageID, filename string) (string, err
 			return "", nil
 		}
 		a.rememberSavePath(savePath)
-		return a.DownloadEncryptedAttachment(messageID, filename, savePath)
+		return a.DownloadEncryptedAttachment(messageID, index, savePath)
 	}
 
 	// Native: use Wails dialog
@@ -565,12 +575,12 @@ func (a *App) SaveEncryptedAttachmentAs(messageID, filename string) (string, err
 	}
 	a.rememberSavePath(savePath)
 
-	return a.DownloadEncryptedAttachment(messageID, filename, savePath)
+	return a.DownloadEncryptedAttachment(messageID, index, savePath)
 }
 
 // OpenEncryptedAttachment decrypts an encrypted message, extracts and opens an attachment.
-func (a *App) OpenEncryptedAttachment(messageID, filename string) error {
-	localPath, err := a.DownloadEncryptedAttachment(messageID, filename, "")
+func (a *App) OpenEncryptedAttachment(messageID string, index int) error {
+	localPath, err := a.DownloadEncryptedAttachment(messageID, index, "")
 	if err != nil {
 		return err
 	}
@@ -579,29 +589,17 @@ func (a *App) OpenEncryptedAttachment(messageID, filename string) error {
 
 // SaveAllEncryptedAttachments shows a folder picker and saves all attachments from an encrypted message.
 // Returns the folder path where files were saved, or empty string if cancelled.
-// filenames are the files to save (Emailio: the ones shown as chips).
-func (a *App) SaveAllEncryptedAttachments(messageID string, filenames []string) (string, error) {
+// indexes are the positions of the files to save (Emailio: the ones shown as chips).
+func (a *App) SaveAllEncryptedAttachments(messageID string, indexes []int) (string, error) {
 	log := logging.WithComponent("app")
 
-	msg, err := a.messageStore.Get(messageID)
+	innerBytes, siblings, err := a.decryptedAttachments(messageID)
 	if err != nil {
-		return "", fmt.Errorf("failed to get message: %w", err)
+		return "", err
 	}
-	if msg == nil {
-		return "", fmt.Errorf("message not found: %s", messageID)
-	}
-
-	// Decrypt and unwrap
-	innerBytes, err := a.decryptMessageBody(msg)
-	if err != nil {
-		return "", fmt.Errorf("failed to decrypt message: %w", err)
-	}
-
-	// Parse to get attachment list
-	parsed := a.syncEngine.ParseDecryptedBody(innerBytes, messageID)
 	var regularAtts []*message.Attachment
-	for _, att := range parsed.Attachments {
-		if slices.Contains(filenames, att.Filename) {
+	for i, att := range siblings {
+		if slices.Contains(indexes, i) {
 			regularAtts = append(regularAtts, att)
 		}
 	}
@@ -619,7 +617,7 @@ func (a *App) SaveAllEncryptedAttachments(messageID string, filenames []string) 
 
 	// In Flatpak, use portal save dialog (Wails GTK dialog doesn't route through portal)
 	if platform.IsFlatpak() {
-		return a.saveAllEncryptedAttachmentsViaPortal(regularAtts, innerBytes, defaultDir)
+		return a.saveAllEncryptedAttachmentsViaPortal(regularAtts, siblings, innerBytes, defaultDir)
 	}
 
 	// Native: use Wails folder dialog
@@ -639,13 +637,13 @@ func (a *App) SaveAllEncryptedAttachments(messageID string, filenames []string) 
 	savedCount := 0
 
 	for _, att := range regularAtts {
-		content, err := downloader.ExtractAttachmentContent(innerBytes, att.Filename)
+		content, err := downloader.ExtractPart(innerBytes, email.PartRefFor(att, siblings))
 		if err != nil {
 			log.Warn().Err(err).Str("filename", att.Filename).Msg("Failed to extract encrypted attachment")
 			continue
 		}
 
-		savePath := filepath.Join(saveDir, att.Filename)
+		savePath := uniqueSavePath(saveDir, att.Filename)
 		_, err = downloader.SaveAttachment(att, content, savePath)
 		if err != nil {
 			log.Warn().Err(err).Str("filename", att.Filename).Msg("Failed to save encrypted attachment")
@@ -659,7 +657,7 @@ func (a *App) SaveAllEncryptedAttachments(messageID string, filenames []string) 
 }
 
 // saveAllAttachmentsViaPortal saves all attachments using the XDG FileChooser portal.
-func (a *App) saveAllAttachmentsViaPortal(messageID string, attachments []*message.Attachment, defaultDir string) (string, error) {
+func (a *App) saveAllAttachmentsViaPortal(messageID string, attachments, siblings []*message.Attachment, defaultDir string) (string, error) {
 	log := logging.WithComponent("app")
 
 	filenames := make([]string, len(attachments))
@@ -701,7 +699,7 @@ func (a *App) saveAllAttachmentsViaPortal(messageID string, attachments []*messa
 			break
 		}
 
-		content, err := downloader.ExtractAttachmentContent(raw, att.Filename)
+		content, err := downloader.ExtractPart(raw, email.PartRefFor(att, siblings))
 		if err != nil {
 			log.Warn().Err(err).Str("filename", att.Filename).Msg("Failed to extract attachment")
 			continue
@@ -720,7 +718,7 @@ func (a *App) saveAllAttachmentsViaPortal(messageID string, attachments []*messa
 }
 
 // saveAllEncryptedAttachmentsViaPortal saves all encrypted attachments using the XDG FileChooser portal.
-func (a *App) saveAllEncryptedAttachmentsViaPortal(attachments []*message.Attachment, innerBytes []byte, defaultDir string) (string, error) {
+func (a *App) saveAllEncryptedAttachmentsViaPortal(attachments, siblings []*message.Attachment, innerBytes []byte, defaultDir string) (string, error) {
 	log := logging.WithComponent("app")
 
 	filenames := make([]string, len(attachments))
@@ -747,7 +745,7 @@ func (a *App) saveAllEncryptedAttachmentsViaPortal(attachments []*message.Attach
 			break
 		}
 
-		content, err := downloader.ExtractAttachmentContent(innerBytes, att.Filename)
+		content, err := downloader.ExtractPart(innerBytes, email.PartRefFor(att, siblings))
 		if err != nil {
 			log.Warn().Err(err).Str("filename", att.Filename).Msg("Failed to extract encrypted attachment")
 			continue
@@ -763,6 +761,30 @@ func (a *App) saveAllEncryptedAttachmentsViaPortal(attachments []*message.Attach
 
 	log.Info().Int("count", savedCount).Msg("Saved all encrypted attachments via portal")
 	return filepath.Dir(savePaths[0]), nil
+}
+
+// uniqueSavePath returns a path in dir for a file of the given name that doesn't
+// exist yet, numbering it if needed: "file (2).pdf". Only the name itself is
+// used, so a name from an email can't point outside dir (Emailio).
+func uniqueSavePath(dir, name string) string {
+	name = strings.Map(func(r rune) rune {
+		if strings.ContainsRune(`<>:"|?*`, r) {
+			return '_'
+		}
+		return r
+	}, sanitizeAttachmentFilename(name))
+	if strings.Trim(name, ". ") == "" {
+		name = "attachment.bin"
+	}
+	path := filepath.Join(dir, name)
+	ext := filepath.Ext(name)
+	for i := 2; i < 10000; i++ {
+		if _, err := os.Lstat(path); err != nil {
+			break
+		}
+		path = filepath.Join(dir, fmt.Sprintf("%s (%d)%s", strings.TrimSuffix(name, ext), i, ext))
+	}
+	return path
 }
 
 // rememberSavePath records a path the user chose in a save dialog so the

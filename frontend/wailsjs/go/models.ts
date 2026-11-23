@@ -417,6 +417,7 @@ export namespace app {
 	    size: number;
 	    isInline: boolean;
 	    contentId: string;
+	    index: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new DecryptedAttachment(source);
@@ -429,6 +430,7 @@ export namespace app {
 	        this.size = source["size"];
 	        this.isInline = source["isInline"];
 	        this.contentId = source["contentId"];
+	        this.index = source["index"];
 	    }
 	}
 	export class DefaultMailAppStatus {

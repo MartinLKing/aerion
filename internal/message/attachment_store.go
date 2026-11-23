@@ -72,7 +72,7 @@ func (s *AttachmentStore) GetByMessage(messageID string) ([]*Attachment, error) 
 		SELECT id, message_id, filename, content_type, size, content_id, is_inline, local_path
 		FROM attachments
 		WHERE message_id = ?
-		ORDER BY filename
+		ORDER BY filename, rowid
 	`
 	rows, err := s.db.Query(query, messageID)
 	if err != nil {

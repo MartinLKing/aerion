@@ -1130,8 +1130,8 @@ export function SaveDraft(arg1, arg2, arg3) {
   return window['go']['app']['App']['SaveDraft'](arg1, arg2, arg3);
 }
 
-export function SaveEncryptedAttachmentAs(arg1, arg2) {
-  return window['go']['app']['App']['SaveEncryptedAttachmentAs'](arg1, arg2);
+export function SaveEncryptedAttachmentAs(arg1, arg2, arg3) {
+  return window['go']['app']['App']['SaveEncryptedAttachmentAs'](arg1, arg2, arg3);
 }
 
 export function SaveFilterRule(arg1) {
