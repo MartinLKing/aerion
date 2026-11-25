@@ -32,7 +32,7 @@ func TestParseICSInvite(t *testing.T) {
 	if ev.Summary != "Sample review" || ev.Location != "Istanbul office" {
 		t.Errorf("summary/location = %q / %q", ev.Summary, ev.Location)
 	}
-	if !strings.Contains(ev.Description, "swatches") {
+	if ev.Description != "Bring the swatches, please." {
 		t.Errorf("description = %q", ev.Description)
 	}
 	want := time.Date(2026, 11, 20, 14, 0, 0, 0, time.UTC).Unix()

@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "lint": "eslint .",
+    "test:calendar": "node --experimental-strip-types --test src/lib/calendar/*.test.mjs",
     "lint:fix": "eslint . --fix",
     "knip": "knip"
   },

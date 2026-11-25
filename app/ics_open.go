@@ -77,9 +77,9 @@ func ParseICS(data string) (*ICSEvent, error) {
 	}
 	m := parsed.Master
 	ev := &ICSEvent{
-		Summary:     m.Summary,
-		Location:    m.Location,
-		Description: m.Description,
+		Summary:     extcalendarbe.UnescapeText(m.Summary),
+		Location:    extcalendarbe.UnescapeText(m.Location),
+		Description: extcalendarbe.UnescapeText(m.Description),
 		StartUnix:   m.DTStartUnix,
 		EndUnix:     m.DTEndUnix,
 		AllDay:      m.IsAllDay,

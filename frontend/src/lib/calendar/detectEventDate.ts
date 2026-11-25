@@ -180,6 +180,18 @@ function findTime(text: string, from: number, to: number): Omit<DetectedDate, 'y
 // ("sent on 3 November"), not next year
 const RECENT_PAST_DAYS = 60
 
+/** A time in the text, such as "20:00 Uhr". */
+export function detectTime(text: string): { hour: number; minute: number; endHour?: number; endMinute?: number } | null {
+  const normalized = normalize(text)
+  const t = findTime(normalized, 0, normalized.length)
+  return t && t.hour !== undefined ? { ...t, hour: t.hour, minute: t.minute ?? 0 } : null
+}
+
+/** The first date in the text, upcoming or past, and where it starts. */
+export function detectDate(text: string, now: Date = new Date()): { date: DetectedDate; index: number } | null {
+  return findEventDates(text, now).next().value ?? null
+}
+
 /**
  * Returns the first date in the text that is today or later, with a time if one
  * appears close to it. If every date has passed, returns the first one marked
@@ -187,10 +199,18 @@ const RECENT_PAST_DAYS = 60
  * is taken as this year if it passed recently, otherwise as next year.
  */
 export function detectEventDate(text: string, now: Date = new Date()): DetectedDate | null {
-  if (!text) return null
+  let firstPast: DetectedDate | null = null
+  for (const { date } of findEventDates(text, now)) {
+    if (!date.isPast) return date
+    firstPast ??= date
+  }
+  return firstPast
+}
+
+function* findEventDates(text: string, now: Date): Generator<{ date: DetectedDate; index: number }, undefined> {
+  if (!text) return
   const normalized = normalize(text)
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  let firstPast: DetectedDate | null = null
 
   for (const c of findDates(normalized)) {
     // English "may" is usually the verb unless capitalised ("you may 5 times")
@@ -213,8 +233,6 @@ export function detectEventDate(text: string, now: Date = new Date()): DetectedD
       findTime(normalized, Math.max(0, c.index - 25), c.index)
     const found: DetectedDate = { year, month: c.month, day: c.day, ...(time ?? {}) }
 
-    if (date >= today) return found
-    firstPast ??= { ...found, isPast: true }
+    yield { date: date >= today ? found : { ...found, isPast: true }, index: c.index }
   }
-  return firstPast
 }

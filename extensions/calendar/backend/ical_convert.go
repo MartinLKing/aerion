@@ -260,3 +260,8 @@ func unescapeICalText(s string) string {
 	}
 	return b.String()
 }
+
+// UnescapeText decodes iCalendar escapes in text for display (Emailio).
+func UnescapeText(s string) string {
+	return unescapeICalText(s)
+}

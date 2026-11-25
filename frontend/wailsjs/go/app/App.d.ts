@@ -287,6 +287,8 @@ export function GetDefaultMailAppStatus():Promise<app.DefaultMailAppStatus>;
 
 export function GetDraft(arg1:string):Promise<smtp.ComposeMessage>;
 
+export function GetEmailEvents(arg1:string):Promise<Array<app.ICSEvent>>;
+
 export function GetFTSIndexStatus(arg1:string):Promise<message.FTSIndexStatus>;
 
 export function GetFTSIndexStatusAll():Promise<Record<string, message.FTSIndexStatus>>;

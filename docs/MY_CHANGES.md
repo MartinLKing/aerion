@@ -268,3 +268,15 @@ Files were looked up in the email by name only, so opening or saving the second 
 - **Deleted images were still sent.** An image dropped into the text and then deleted stayed in the email invisibly. Only images still in the text are sent now. In plain text there is no HTML to check, so they all are. An inline file the text doesn't use (old drafts, some forwards) shows as a normal attachment instead.
 - **Forwards left out inline files without a Content-ID**, such as Apple Mail photos. A forward now carries every file: images the body displays stay embedded, the rest are normal attachments. The same goes for editing a draft written elsewhere.
 - **The pop-out composer's forwards had no attachments**, and its replies ignored Reply-To and loaded remote images, because it used a simplified copy of the reply code. It now uses the main window's (`prepareReply` in `app/original_attachments.go`, with tests); the copy is removed. This mattered since the separate-window setting also covers replies and forwards.
+
+## Add to calendar reads the whole email
+
+"Add to calendar" only used the first date and the top of the text. It now fills in title, start, end, location and a short summary.
+
+- An attached calendar file is used first (`GetEmailEvents`, `app/ics_email.go`); with several events you choose one. If it can't be fetched or read, the text is used.
+- Otherwise labelled details are read in English, German, French and Spanish: check-in/check-out, start/end, from/to, date, time, duration, location (`extractEvent.ts`). A text part without labels falls back to the HTML part. With no labels at all it guesses the first upcoming date, as before.
+- Hotel stays are all-day, from check-in to check-out day, titled with the hotel's name; the times are in the description.
+- PINs and passwords, image placeholders and (except in calendar files) links are left out of the description.
+- Nothing is sent anywhere; an attached file is fetched from your own mail server.
+- Also fixed: events from `.ics` files showed `\,` and `\n` instead of commas and line breaks.
+- Tests: `npm run test:calendar` in `frontend` (Node's own runner, no new packages).

@@ -534,6 +534,10 @@ export function GetDraft(arg1) {
   return window['go']['app']['App']['GetDraft'](arg1);
 }
 
+export function GetEmailEvents(arg1) {
+  return window['go']['app']['App']['GetEmailEvents'](arg1);
+}
+
 export function GetFTSIndexStatus(arg1) {
   return window['go']['app']['App']['GetFTSIndexStatus'](arg1);
 }
