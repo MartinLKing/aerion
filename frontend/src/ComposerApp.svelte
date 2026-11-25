@@ -2,7 +2,7 @@
   // Load offline icon data before anything else
   import './lib/iconify-offline'
 
-  import { onMount, onDestroy } from 'svelte'
+  import { onMount, onDestroy, tick } from 'svelte'
   import Icon from '@iconify/svelte'
   import Composer from './lib/components/composer/Composer.svelte'
   import ToastContainer from './lib/components/ui/toast/ToastContainer.svelte'
@@ -13,7 +13,7 @@
   import { getShowTitleBar, getNativeTitleBar, setShowTitleBar, setNativeTitleBar, setDarkComposerBody } from '$lib/stores/settings.svelte'
   import { initTheme, handleThemeChanged, type ThemeMode } from '$lib/stores/theme.svelte'
   // @ts-ignore - wailsjs imports
-  import { GetComposeMode, PrepareReply, GetDraft, CloseWindow, GetThemeMode, GetSystemTheme, GetShowTitleBar, GetNativeTitleBar, GetDarkComposerBody, RefreshWindowConstraints, NotifyStartupComplete } from '../wailsjs/go/app/ComposerApp.js'
+  import { GetComposeMode, PrepareReply, GetDraft, CloseWindow, SetClosePromptReady, GetThemeMode, GetSystemTheme, GetShowTitleBar, GetNativeTitleBar, GetDarkComposerBody, RefreshWindowConstraints, NotifyStartupComplete } from '../wailsjs/go/app/ComposerApp.js'
   // @ts-ignore - wailsjs imports
   import { smtp, app } from '../wailsjs/go/models'
   // @ts-ignore - wailsjs runtime
@@ -100,11 +100,16 @@
         type: 'info',
         message: $_('toast.mainWindowClosing'),
       })
-      // Give user a moment to see the toast, then close
-      setTimeout(() => {
-        CloseWindow()
-      }, 1000)
+      // Emailio: save the draft, then close
+      if (composerRef) {
+        composerRef.saveAndCloseForShutdown()
+        return
+      }
+      CloseWindow()
     })
+
+    // The window is being closed by the system (Emailio): ask about the draft
+    EventsOn('composer:close-requested', requestClose)
 
     // Load compose mode and initial data
     try {
@@ -142,6 +147,7 @@
   onDestroy(() => {
     EventsOff('theme:changed')
     EventsOff('app:shutdown')
+    EventsOff('composer:close-requested')
   })
 
   // Window control functions
@@ -155,9 +161,22 @@
   }
 
   // Request close - triggers Composer's close confirmation dialog
-  function requestClose() {
+  async function requestClose() {
+    if (!composerRef) {
+      CloseWindow()
+      return
+    }
+    // Also asks again if an earlier question was dismissed without an answer
+    closeRequested = false
+    await tick()
     closeRequested = true
   }
+
+  // Asking before closing needs the composer to be there
+  let composerRef = $state<ReturnType<typeof Composer> | null>(null)
+  $effect(() => {
+    SetClosePromptReady(!!composerRef)
+  })
 
   // Called when Composer has handled the close request (user made a choice)
   function handleCloseHandled() {
@@ -260,6 +279,7 @@
       </div>
     {:else if composeMode}
       <Composer
+        bind:this={composerRef}
         accountId={composeMode.accountId}
         initialMessage={initialMessage}
         draftId={composeMode.draftId || null}

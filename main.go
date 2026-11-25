@@ -308,6 +308,7 @@ func runComposerMode() {
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        composerApp.Startup,
+		OnBeforeClose:    composerApp.BeforeClose,
 		OnShutdown:       composerApp.Shutdown,
 		Bind: []interface{}{
 			composerApp,

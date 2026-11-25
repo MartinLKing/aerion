@@ -649,17 +649,18 @@
   let savingComplete: Promise<void> = Promise.resolve()
 
   // Actually save the draft
-  async function saveDraft() {
-    if (discarding) return
-    if (!hasContent()) return
+  // Returns whether everything worth saving is saved
+  async function saveDraft(): Promise<boolean> {
+    if (discarding) return true
+    if (!hasContent()) return true
 
     // If a save is already in flight, skip — next edit will trigger a fresh save
-    if (isSaving) return
+    if (isSaving) return false
 
     // Check again for content changes before saving
     const currentHash = getContentHash()
     if (currentHash === lastContent && currentDraftId) {
-      return  // No changes since last save
+      return true  // No changes since last save
     }
 
     let resolveSaving: () => void
@@ -675,13 +676,36 @@
       saveStatus = 'saved'
       syncStatus = result.syncStatus as 'pending' | 'synced' | 'failed'
       lastSavedAt = new Date()
+      return true
     } catch (err) {
       console.error('Failed to save draft:', err)
       saveStatus = 'error'
+      return false
     } finally {
       isSaving = false
       resolveSaving!()
     }
+  }
+
+  // Saves the latest text, also when an autosave is still running (Emailio)
+  async function saveLatest(): Promise<boolean> {
+    if (saveTimeoutId) {
+      clearTimeout(saveTimeoutId)
+      saveTimeoutId = null
+    }
+    await savingComplete
+    return saveDraft()
+  }
+
+  // The main window is closing: save without asking, then close. Stays open if
+  // saving fails, and while sending, which closes the window itself.
+  export async function saveAndCloseForShutdown() {
+    if (sending || discarding) return
+    if (await saveLatest()) {
+      onClose?.()
+      return
+    }
+    addToast({ type: 'error', message: $_('composer.draftNotSaved') })
   }
 
   // Load blocked remote images in the composer editor
@@ -1459,16 +1483,15 @@
   // Save & Close: Save current content as draft, then close
   async function handleSaveAndClose() {
     closeLoading = 'save'
-    try {
-      if (hasContent()) {
-        await saveDraft()
-      }
-    } catch (err) {
-      console.error('Failed to save draft:', err)
-      // Still close even if save fails
-    }
+    const saved = await saveLatest()
     showCloseConfirm = false
     closeLoading = null
+    if (!saved) {
+      // Emailio: closing now would lose the text
+      onCloseHandled?.()
+      addToast({ type: 'error', message: $_('composer.draftNotSaved') })
+      return
+    }
     onCloseHandled?.()
     onClose?.()
   }
@@ -1477,6 +1500,8 @@
   function handleKeepEditing() {
     showCloseConfirm = false
     onCloseHandled?.()
+    // Asking cancelled the pending autosave
+    scheduleDraftSave()
   }
 
   // Pop out to detached window

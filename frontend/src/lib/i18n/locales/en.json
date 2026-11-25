@@ -223,6 +223,7 @@
     "closeTitle": "Close this message?",
     "closeDescription": "What would you like to do with this draft?",
     "discardDraft": "Discard",
+    "draftNotSaved": "The draft could not be saved, so the window stays open.",
     "keepEditing": "Keep Editing",
     "messageSent": "Message sent",
     "failedToSend": "Failed to send.",

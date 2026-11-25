@@ -284,3 +284,13 @@ Files were looked up in the email by name only, so opening or saving the second 
 ## New icon
 
 Emailio has its own icon: `build/appicon.png` (1024), `build/windows/icon.ico` (16 to 256) and `frontend/src/assets/images/logo-universal.png` (Settings → About). The drawing is trimmed to its full width of 58 squares. Wails only makes `icon.ico` from `appicon.png` if it's missing.
+
+## Closing a composer window asks about the draft
+
+Only the composer's own title bar button asked. Closing through Windows (native title bar, Alt+F4, taskbar) closed at once and could lose the last seconds of text.
+
+- Every way of closing the pop-out composer now asks to save, discard or keep editing (`app/composer_close.go`, with tests). While it is loading or failed to load, it closes without asking.
+- Save & Close saves the latest text even if an autosave is running, and keeps the window open if saving fails.
+- A draft still uploading is finished in the background after the window disappears, for up to 20 seconds. If that isn't enough it stays in the local database and is uploaded at the next start.
+- When Emailio itself is closed, open composers save their draft and then close. They used to close after a second without saving.
+- "Keep editing" restarts the autosave that asking had cancelled.

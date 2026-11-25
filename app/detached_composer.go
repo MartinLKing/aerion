@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	goSync "sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/hkdb/aerion/internal/account"
@@ -99,6 +100,10 @@ type ComposerApp struct {
 	draftSyncCancel context.CancelFunc
 	draftSyncDone   chan struct{}
 	draftSyncMu     goSync.Mutex
+
+	// Closing, see composer_close.go (Emailio)
+	closePromptReady atomic.Bool
+	closeConfirmed   atomic.Bool
 
 	// Composer state
 	originalMessage *message.Message     // For reply/forward
@@ -846,11 +851,6 @@ func (c *ComposerApp) syncDraftToIMAP(ctx context.Context, localDraft *draft.Dra
 	// Notify main window now that the draft is on IMAP
 	// This triggers the main window to sync the Drafts folder
 	c.notifyDraftSaved(localDraft.AccountID, localDraft.ID)
-}
-
-// CloseWindow requests the window to close.
-func (c *ComposerApp) CloseWindow() {
-	wailsRuntime.Quit(c.ctx)
 }
 
 // PickAttachmentFiles opens a file picker dialog and returns the selected files as attachments.
