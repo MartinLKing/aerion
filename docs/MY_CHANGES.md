@@ -283,4 +283,4 @@ Files were looked up in the email by name only, so opening or saving the second 
 
 ## New icon
 
-Emailio has its own icon: `build/appicon.png` (1024), `build/windows/icon.ico` (16 to 256) and `frontend/src/assets/images/logo-universal.png` (Settings → About). The drawing is on a 64×64 grid; sizes that are multiples of 64 are exact. Wails only makes `icon.ico` from `appicon.png` if it's missing.
+Emailio has its own icon: `build/appicon.png` (1024), `build/windows/icon.ico` (16 to 256) and `frontend/src/assets/images/logo-universal.png` (Settings → About). The drawing is trimmed to its full width of 58 squares. Wails only makes `icon.ico` from `appicon.png` if it's missing.
