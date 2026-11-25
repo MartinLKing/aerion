@@ -17,7 +17,7 @@ Deliberately kept as Aerion:
 - The data folder `%APPDATA%\Aerion`, the database, and the "aerion" Windows Credential Manager entries. Renaming these would disconnect the accounts and saved logins.
 - Go module and package names, internal IDs, the IMAP client ID sent to servers, and environment variables such as `AERION_LOG_LEVEL`, so upstream merges stay easy.
 - Labels that really mean Aerion: its terms of use, its official builds and built-in OAuth credentials ("Aerion - Google"), Flatpak notes, and upstream's What's New text.
-- The icon, and the other languages' labels.
+- The other languages' labels, and the Linux and macOS icons.
 
 ## Folder management
 
@@ -280,3 +280,7 @@ Files were looked up in the email by name only, so opening or saving the second 
 - Nothing is sent anywhere; an attached file is fetched from your own mail server.
 - Also fixed: events from `.ics` files showed `\,` and `\n` instead of commas and line breaks.
 - Tests: `npm run test:calendar` in `frontend` (Node's own runner, no new packages).
+
+## New icon
+
+Emailio has its own icon: `build/appicon.png` (1024), `build/windows/icon.ico` (16 to 256) and `frontend/src/assets/images/logo-universal.png` (Settings → About). The drawing is on a 64×64 grid; sizes that are multiples of 64 are exact. Wails only makes `icon.ico` from `appicon.png` if it's missing.
